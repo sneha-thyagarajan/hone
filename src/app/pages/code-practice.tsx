@@ -1,7 +1,12 @@
+import { Code2 } from 'lucide-react'
+import { ComingSoon } from '@/components/ui/ComingSoon'
+
 export default function CodePracticePage() {
   return (
-    <div className="flex flex-1 items-center justify-center">
-      <h1 className="font-serif text-3xl text-ink">Code practice – coming soon</h1>
-    </div>
+    <ComingSoon
+      icon={<Code2 size={28} />}
+      title="Code practice"
+      description="A Python or JavaScript editor with a sandboxed test runner. Expected outputs come from running a reference solution, never guessed."
+    />
   )
 }

@@ -1,31 +1,53 @@
 /* ─── Google Fonts ────────────────────────────────────────────────────────── */
-@import url("https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,700;1,9..144,500&family=IBM+Plex+Mono:wght@400;500&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&family=IBM+Plex+Mono:wght@400;500&display=swap");
 
 @import "tailwindcss";
 
-/* ─── Design tokens ──────────────────────────────────────────────────────── */
+/* Enable class-based dark mode (.dark on <html>) */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ─── Design tokens (light defaults) ─────────────────────────────────────── */
 @theme {
-  /* Colors */
-  --color-bg: #f5f5fa;
-  --color-ink: #1e2140;
-  --color-muted: #5f6280;
-  --color-line: #e6e6f0;
+  /* Neutrals */
+  --color-bg: #f6f1ef;
+  --color-surface: #ffffff;
+  --color-surface-2: #f3ece9;
+  --color-ink: #26332f;
+  --color-muted: #66756f;
+  --color-line: #e8ddd8;
+  --color-cream: #fdeeea;
+  --color-heading: #23423b;
 
-  --color-accent: #5a52e0;
-  --color-accent-dark: #4a42c8;
-  --color-accent-tint: #ecebfd;
+  /* Teal (primary / structural) */
+  --color-accent: #3d5b59;
+  --color-accent-dark: #2d4543;
+  --color-accent-light: #507b77;
+  --color-accent-tint: #dde8e6;
+  --color-on-accent: #fdeeea;
 
+  /* Salmon (warm accent) */
+  --color-pink: #fcb5ac;
+  --color-pink-strong: #f6978b;
+  --color-pink-tint: #fde8e4;
+  --color-pink-text: #b5574b;
+
+  /* Semantic */
   --color-success: #2f9e80;
   --color-success-text: #17705a;
   --color-success-tint: #dff3eb;
 
-  --color-amber: #946012;
+  --color-amber: #a9690f;
   --color-amber-tint: #fbf0dc;
 
-  --color-danger-text: #b23a31;
-  --color-danger-tint: #fce9e6;
+  --color-danger: #c23a2e;
+  --color-danger-text: #c23a2e;
+  --color-danger-tint: #f8e3dd;
 
-  --color-code: #14162b;
+  --color-code: #16211f;
+
+  /* Sidebar text (sidebar surface is teal in both themes) */
+  --color-sidebar-text: #d9e4e1;
+  --color-sidebar-muted: #8ba39f;
 
   /* Typography */
   --font-sans: "DM Sans", sans-serif;
@@ -33,11 +55,53 @@
   --font-mono: "IBM Plex Mono", monospace;
 
   /* Radius */
-  --radius-card: 14px;
-  --radius-btn: 10px;
+  --radius-card: 16px;
+  --radius-btn: 11px;
 
   /* Shadows */
-  --shadow-card: 0 1px 4px 0 rgb(30 33 64 / 0.06), 0 0 0 1px rgb(30 33 64 / 0.04);
+  --shadow-xs: 0 1px 2px 0 rgb(20 29 27 / 0.05);
+  --shadow-card: 0 1px 2px rgb(20 29 27 / 0.05), 0 4px 16px -4px rgb(20 29 27 / 0.08);
+  --shadow-lg: 0 8px 32px -8px rgb(20 29 27 / 0.2), 0 2px 8px -2px rgb(20 29 27 / 0.1);
+  --shadow-glow: 0 4px 16px -2px rgb(61 91 89 / 0.35);
+}
+
+/* ─── Dark theme overrides (dark salmon canvas + teal accents) ───────────── */
+.dark {
+  --color-bg: #121415;
+  --color-surface: #1c1f20;
+  --color-surface-2: #272b2c;
+  --color-ink: #e9ebea;
+  --color-muted: #969d9c;
+  --color-line: #313637;
+  --color-heading: #fcb5ac;
+
+  --color-accent: #6fc2b6;
+  --color-accent-dark: #8ad4c9;
+  --color-accent-light: #8ad4c9;
+  --color-accent-tint: #18302c;
+  --color-on-accent: #0b1413;
+
+  --color-pink: #fcb5ac;
+  --color-pink-strong: #ffc9c1;
+  --color-pink-tint: #3a2a2b;
+  --color-pink-text: #fba99e;
+
+  --color-success-text: #74d7b6;
+  --color-success-tint: #14332a;
+  --color-amber: #e3af55;
+  --color-amber-tint: #37301d;
+  --color-danger-text: #f3897b;
+  --color-danger-tint: #3b2622;
+
+  --color-code: #0d0f10;
+
+  --color-sidebar-text: #d2e3de;
+  --color-sidebar-muted: #8ba39e;
+
+  --shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.4);
+  --shadow-card: 0 1px 2px rgb(0 0 0 / 0.4), 0 4px 16px -4px rgb(0 0 0 / 0.5);
+  --shadow-lg: 0 8px 32px -8px rgb(0 0 0 / 0.7), 0 2px 8px -2px rgb(0 0 0 / 0.5);
+  --shadow-glow: 0 4px 18px -2px rgb(111 194 182 / 0.3);
 }
 
 /* ─── Base ───────────────────────────────────────────────────────────────── */
@@ -50,5 +114,175 @@
   h2,
   h3 {
     @apply font-serif;
+  }
+
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in srgb, var(--color-muted) 40%, transparent) transparent;
+  }
+  *::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  *::-webkit-scrollbar-thumb {
+    background-color: color-mix(in srgb, var(--color-muted) 40%, transparent);
+    border-radius: 999px;
+    border: 3px solid transparent;
+    background-clip: content-box;
+  }
+  *::-webkit-scrollbar-thumb:hover {
+    background-color: color-mix(in srgb, var(--color-muted) 60%, transparent);
+  }
+}
+
+/* ─── Reusable surfaces & gradients ──────────────────────────────────────── */
+@layer components {
+  /* App background: subtle teal + salmon mesh */
+  .app-surface {
+    background-color: var(--color-bg);
+    background-image:
+      radial-gradient(60rem 40rem at 110% -10%, rgb(252 181 172 / 0.14), transparent 60%),
+      radial-gradient(50rem 40rem at -10% 110%, rgb(61 91 89 / 0.1), transparent 55%);
+  }
+  .dark .app-surface {
+    background-image:
+      radial-gradient(60rem 40rem at 110% -10%, rgb(252 181 172 / 0.06), transparent 60%),
+      radial-gradient(50rem 40rem at -10% 110%, rgb(111 194 182 / 0.06), transparent 55%);
+  }
+
+  /* Dark teal sidebar surface (both themes) */
+  .sidebar-surface {
+    background: linear-gradient(180deg, #41615e 0%, #2b4341 100%);
+  }
+  .dark .sidebar-surface {
+    background: linear-gradient(180deg, #1f3b35 0%, #13201c 100%);
+  }
+
+  /* Primary gradient button (teal) */
+  .btn-primary {
+    background-image: linear-gradient(135deg, #4f7b77 0%, #3d5b59 55%, #2d4543 100%);
+    color: var(--color-cream);
+    box-shadow: var(--shadow-glow);
+    transition:
+      filter 0.15s ease,
+      transform 0.1s ease,
+      box-shadow 0.15s ease;
+  }
+  .dark .btn-primary {
+    background-image: linear-gradient(135deg, #5f918b 0%, #4a716d 55%, #3b5a56 100%);
+  }
+  .btn-primary:hover {
+    filter: brightness(1.07);
+  }
+  .btn-primary:active {
+    transform: translateY(1px);
+  }
+  .btn-primary:disabled {
+    filter: grayscale(0.3) brightness(0.98);
+    opacity: 0.6;
+    box-shadow: none;
+  }
+
+  /* Progress bar fill (teal) — sits on a salmon track for a two-tone bar */
+  .progress-fill {
+    background-image: linear-gradient(90deg, #3d5b59, #5f918b);
+  }
+
+  /* Gradient logo mark: teal → salmon */
+  .logo-mark {
+    background-image: linear-gradient(135deg, #3d5b59, #f6978b);
+  }
+
+  /* Card lift on hover */
+  .card-hover {
+    transition:
+      transform 0.18s ease,
+      box-shadow 0.18s ease;
+  }
+  .card-hover:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+  }
+
+  /* Dialog entrance animations */
+  @keyframes overlay-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  @keyframes content-in {
+    from {
+      opacity: 0;
+      transform: translate(-50%, -48%) scale(0.97);
+    }
+    to {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1);
+    }
+  }
+  .dialog-overlay {
+    animation: overlay-in 0.15s ease;
+  }
+  .dialog-content {
+    animation: content-in 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+}
+
+/* ─── Markdown preview ───────────────────────────────────────────────────── */
+@layer components {
+  .markdown-body {
+    @apply text-[15px] leading-7 text-ink;
+  }
+  .markdown-body > :first-child {
+    margin-top: 0;
+  }
+  .markdown-body h1 {
+    @apply mb-3 mt-6 font-serif text-3xl font-semibold text-heading;
+  }
+  .markdown-body h2 {
+    @apply mb-2 mt-6 font-serif text-2xl font-semibold text-heading;
+  }
+  .markdown-body h3 {
+    @apply mb-2 mt-5 font-serif text-xl font-semibold text-heading;
+  }
+  .markdown-body p {
+    @apply my-3;
+  }
+  .markdown-body ul {
+    @apply my-3 list-disc space-y-1 pl-6;
+  }
+  .markdown-body ol {
+    @apply my-3 list-decimal space-y-1 pl-6;
+  }
+  .markdown-body a {
+    @apply text-accent underline underline-offset-2;
+  }
+  .markdown-body blockquote {
+    @apply my-4 border-l-4 border-accent-tint pl-4 italic text-muted;
+  }
+  .markdown-body code {
+    @apply rounded bg-accent-tint px-1.5 py-0.5 font-mono text-[13px] text-accent-dark;
+  }
+  .markdown-body pre {
+    @apply my-4 overflow-auto rounded-btn bg-code p-4 text-[13px] text-cream;
+  }
+  .markdown-body pre code {
+    @apply bg-transparent p-0 text-cream;
+  }
+  .markdown-body hr {
+    @apply my-6 border-line;
+  }
+  .markdown-body table {
+    @apply my-4 w-full border-collapse text-sm;
+  }
+  .markdown-body th,
+  .markdown-body td {
+    @apply border border-line px-3 py-2 text-left;
+  }
+  .markdown-body th {
+    @apply bg-surface-2 font-semibold;
   }
 }

@@ -1,7 +1,8 @@
 import { useState } from 'react'
-import { BookOpen, Plus } from 'lucide-react'
+import { Home, CalendarDays, Plus, GraduationCap } from 'lucide-react'
 import { NavItem } from './NavItem'
 import { FolderTree } from './FolderTree'
+import { ThemeToggle } from '@/components/ui/ThemeToggle'
 import { CreateFolderDialog } from '@/features/folders/CreateFolderDialog'
 import { RenameFolderDialog } from '@/features/folders/RenameFolderDialog'
 import { DeleteFolderAlert } from '@/features/folders/DeleteFolderAlert'
@@ -14,35 +15,46 @@ export function Sidebar() {
 
   return (
     <>
-      <aside className="flex h-screen w-56 flex-shrink-0 flex-col border-r border-line bg-white">
-        {/* App name */}
-        <div className="flex h-14 items-center gap-2 border-b border-line px-4">
-          <BookOpen size={18} className="text-accent" />
-          <span className="font-serif text-base font-semibold text-ink">Hone</span>
+      <aside className="sidebar-surface flex h-screen w-60 flex-shrink-0 flex-col border-r border-white/5">
+        {/* Brand */}
+        <div className="flex h-16 items-center gap-2.5 px-5">
+          <div className="logo-mark flex h-9 w-9 items-center justify-center rounded-xl shadow-glow">
+            <GraduationCap size={19} className="text-cream" />
+          </div>
+          <span className="font-serif text-lg font-semibold tracking-tight text-cream">Hone</span>
+          <div className="ml-auto">
+            <ThemeToggle />
+          </div>
         </div>
 
         {/* Nav */}
-        <nav className="flex flex-col gap-1 px-2 pt-3">
-          <NavItem to="/">Home</NavItem>
-          <NavItem to="/planner">Planner</NavItem>
+        <nav className="flex flex-col gap-1 px-3 pt-2">
+          <NavItem to="/" icon={<Home size={17} />}>
+            Home
+          </NavItem>
+          <NavItem to="/planner" icon={<CalendarDays size={17} />}>
+            Planner
+          </NavItem>
         </nav>
 
         {/* Folders */}
-        <div className="mt-4 flex flex-col gap-1 px-2">
-          <p className="px-2 text-[10px] font-semibold uppercase tracking-widest text-muted">
+        <div className="mt-6 flex min-h-0 flex-1 flex-col px-3">
+          <p className="px-3 pb-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-sidebar-muted">
             Folders
           </p>
-          <FolderTree
-            onRename={(f) => setFolderToRename(f)}
-            onDelete={(f) => setFolderToDelete(f)}
-          />
+          <div className="min-h-0 flex-1 overflow-y-auto">
+            <FolderTree
+              onRename={(f) => setFolderToRename(f)}
+              onDelete={(f) => setFolderToDelete(f)}
+            />
+          </div>
         </div>
 
-        {/* New folder button */}
-        <div className="mt-auto border-t border-line p-3">
+        {/* New folder */}
+        <div className="p-3">
           <button
             onClick={() => setCreateOpen(true)}
-            className="flex min-h-[44px] w-full items-center justify-center gap-2 rounded-btn border border-line bg-white text-sm font-medium text-ink transition-colors hover:bg-bg"
+            className="flex min-h-[44px] w-full items-center justify-center gap-2 rounded-btn border border-white/10 bg-white/5 text-sm font-medium text-sidebar-text transition-colors hover:bg-white/10 hover:text-cream"
           >
             <Plus size={16} />
             New folder

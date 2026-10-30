@@ -1,7 +1,12 @@
+import { CalendarDays } from 'lucide-react'
+import { ComingSoon } from '@/components/ui/ComingSoon'
+
 export default function PlannerPage() {
   return (
-    <div className="flex flex-1 items-center justify-center">
-      <h1 className="font-serif text-3xl text-ink">Planner – coming soon</h1>
-    </div>
+    <ComingSoon
+      icon={<CalendarDays size={28} />}
+      title="Planner"
+      description="A month calendar with your exam dates, study sessions and countdowns — plus a generated study plan built from your quiz results."
+    />
   )
 }

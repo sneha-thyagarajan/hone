@@ -32,12 +32,28 @@ export function useMarkdownEditor({ initialValue, onChange }: UseMarkdownEditorO
     })
 
     const theme = EditorView.theme({
-      '&': { height: '100%', fontSize: '14px', fontFamily: 'var(--font-mono)' },
+      '&': {
+        height: '100%',
+        fontSize: '14px',
+        fontFamily: 'var(--font-mono)',
+        color: 'var(--color-ink)',
+        backgroundColor: 'transparent',
+      },
       '.cm-scroller': { overflow: 'auto', lineHeight: '1.7' },
-      '.cm-content': { padding: '16px' },
+      '.cm-content': { padding: '16px', caretColor: 'var(--color-accent)' },
       '.cm-line': { padding: '0' },
       '.cm-focused': { outline: 'none' },
-      '.cm-gutters': { backgroundColor: '#f5f5fa', border: 'none', color: '#5f6280' },
+      '.cm-cursor': { borderLeftColor: 'var(--color-accent)' },
+      '.cm-gutters': {
+        backgroundColor: 'transparent',
+        border: 'none',
+        color: 'var(--color-muted)',
+      },
+      '.cm-activeLine': { backgroundColor: 'color-mix(in srgb, var(--color-accent) 7%, transparent)' },
+      '.cm-activeLineGutter': { backgroundColor: 'transparent' },
+      '&.cm-focused .cm-selectionBackground, ::selection': {
+        backgroundColor: 'color-mix(in srgb, var(--color-accent) 20%, transparent)',
+      },
     })
 
     const state = EditorState.create({

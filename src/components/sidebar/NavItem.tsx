@@ -3,24 +3,32 @@ import { cn } from '@/lib/utils'
 
 interface NavItemProps {
   to: string
+  icon?: React.ReactNode
   children: React.ReactNode
 }
 
-export function NavItem({ to, children }: NavItemProps) {
+export function NavItem({ to, icon, children }: NavItemProps) {
   return (
     <NavLink
       to={to}
       end={to === '/'}
       className={({ isActive }) =>
         cn(
-          'flex min-h-[44px] items-center rounded-btn px-3 py-2 text-sm font-medium transition-colors',
+          'group flex min-h-[42px] items-center gap-2.5 rounded-btn px-3 text-sm font-medium transition-colors',
           isActive
-            ? 'bg-accent-tint font-semibold text-accent'
-            : 'text-ink hover:bg-line',
+            ? 'bg-white/10 text-cream shadow-[inset_0_0_0_1px_rgb(255_255_255/0.08)]'
+            : 'text-sidebar-text hover:bg-white/5 hover:text-cream',
         )
       }
     >
-      {children}
+      {({ isActive }) => (
+        <>
+          <span className={cn('transition-colors', isActive ? 'text-pink' : 'text-sidebar-muted group-hover:text-sidebar-text')}>
+            {icon}
+          </span>
+          {children}
+        </>
+      )}
     </NavLink>
   )
 }

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ChevronDown, FileText, Code, Upload, Sparkles } from 'lucide-react'
+import { ChevronDown, FileText, Code, Upload, Sparkles, Plus } from 'lucide-react'
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 import { cn } from '@/lib/utils'
 import { createFile } from './fileActions'
@@ -31,8 +31,9 @@ export function NewFileMenu({ folderId }: Props) {
   return (
     <DropdownMenu.Root open={open} onOpenChange={setOpen}>
       <DropdownMenu.Trigger asChild>
-        <button className="flex min-h-[44px] items-center gap-1.5 rounded-btn bg-accent px-4 text-sm font-semibold text-white transition-colors hover:bg-accent-dark">
-          + New file
+        <button className="btn-primary flex min-h-[44px] items-center gap-1.5 rounded-btn px-4 text-sm font-semibold">
+          <Plus size={15} />
+          New file
           <ChevronDown size={14} className={cn('transition-transform', open && 'rotate-180')} />
         </button>
       </DropdownMenu.Trigger>
@@ -41,11 +42,11 @@ export function NewFileMenu({ folderId }: Props) {
         <DropdownMenu.Content
           align="end"
           sideOffset={6}
-          className="z-50 min-w-[220px] rounded-card border border-line bg-white py-1 shadow-card"
+          className="z-50 min-w-[220px] rounded-card border border-line bg-surface py-1 shadow-card"
         >
           <DropdownMenu.Item
             onSelect={handleBlankNote}
-            className="flex cursor-pointer items-start gap-3 px-4 py-2.5 outline-none hover:bg-bg"
+            className="flex cursor-pointer items-start gap-3 px-4 py-2.5 outline-none hover:bg-surface-2"
           >
             <FileText size={16} className="mt-0.5 flex-shrink-0 text-accent" />
             <div>
@@ -56,7 +57,7 @@ export function NewFileMenu({ folderId }: Props) {
 
           <DropdownMenu.Item
             onSelect={handleCodePractice}
-            className="flex cursor-pointer items-start gap-3 px-4 py-2.5 outline-none hover:bg-bg"
+            className="flex cursor-pointer items-start gap-3 px-4 py-2.5 outline-none hover:bg-surface-2"
           >
             <Code size={16} className="mt-0.5 flex-shrink-0 text-accent" />
             <div>

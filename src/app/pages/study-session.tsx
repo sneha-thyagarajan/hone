@@ -1,7 +1,12 @@
+import { GraduationCap } from 'lucide-react'
+import { ComingSoon } from '@/components/ui/ComingSoon'
+
 export default function StudySessionPage() {
   return (
-    <div className="flex flex-1 items-center justify-center">
-      <h1 className="font-serif text-3xl text-ink">Study session – coming soon</h1>
-    </div>
+    <ComingSoon
+      icon={<GraduationCap size={28} />}
+      title="Study session"
+      description="A distraction-free focus mode for flashcards with spaced-repetition ratings (Again / Hard / Good / Easy) that update your readiness."
+    />
   )
 }

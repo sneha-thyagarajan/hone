@@ -4,7 +4,7 @@ Updated after every step. A milestone is ticked only when it passes lint + typec
 
 ---
 
-## Health check (last run: step 2 complete)
+## Health check (last run: UI redesign + theming)
 
 | Check | Result |
 |-------|--------|
@@ -13,6 +13,20 @@ Updated after every step. A milestone is ticked only when it passes lint + typec
 | `pnpm test` | ✅ 17/17 pass |
 | `pnpm dev` | ✅ serves on :5173 |
 | `pnpm build` | ✅ builds (chunk-size warning only – expected until code-splitting) |
+
+---
+
+## Design system
+
+Brand palette: **salmon pink + teal green**, applied as a semantic token system with
+a **light + dark theme toggle** (persisted to localStorage, `.dark` on `<html>`).
+
+- Light: salmon-cream canvas, teal sidebar, dark-teal headings.
+- Dark: neutral charcoal canvas, deep-teal sidebar, salmon headings for a warm accent.
+- Rule: **teal = structural/interactive** (buttons, active states, progress),
+  **salmon = identity/highlight** (kind badges, NOTE badges, headings in dark).
+- Reusable primitives: `components/ui/{Button, ProgressBar, ThemeToggle, ComingSoon}`.
+- Theme-aware tokens in `src/index.css`; `src/lib/theme.ts` holds the toggle store.
 
 ---
 

@@ -35,9 +35,9 @@ export function RenameFolderDialog({ folder, open, onOpenChange }: Props) {
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 bg-ink/30 backdrop-blur-sm" />
-        <Dialog.Content className="fixed left-1/2 top-1/2 w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-card bg-white p-8 shadow-card focus:outline-none">
-          <Dialog.Title className="font-serif text-2xl font-semibold text-ink">
+        <Dialog.Overlay className="dialog-overlay fixed inset-0 bg-black/50 backdrop-blur-sm" />
+        <Dialog.Content className="dialog-content fixed left-1/2 top-1/2 w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-card bg-surface p-8 shadow-lg focus:outline-none">
+          <Dialog.Title className="font-serif text-2xl font-semibold text-heading">
             Rename folder
           </Dialog.Title>
 
@@ -67,7 +67,7 @@ export function RenameFolderDialog({ folder, open, onOpenChange }: Props) {
               <Dialog.Close asChild>
                 <button
                   type="button"
-                  className="rounded-btn px-5 py-2.5 text-sm font-medium text-muted transition-colors hover:bg-bg"
+                  className="rounded-btn px-5 py-2.5 text-sm font-medium text-muted transition-colors hover:bg-surface-2"
                 >
                   Cancel
                 </button>
@@ -75,7 +75,7 @@ export function RenameFolderDialog({ folder, open, onOpenChange }: Props) {
               <button
                 type="submit"
                 disabled={loading}
-                className="rounded-btn bg-accent px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-accent-dark disabled:opacity-60"
+                className="btn-primary rounded-btn px-5 py-2.5 text-sm font-semibold"
               >
                 {loading ? 'Saving…' : 'Save'}
               </button>

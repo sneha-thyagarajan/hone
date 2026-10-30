@@ -1,32 +1,28 @@
 import { useState } from 'react'
 import { NavLink, useNavigate, useParams } from 'react-router-dom'
-import { ChevronRight, FileText, Code, File } from 'lucide-react'
+import { ChevronRight, FileText, Code, File, MoreHorizontal } from 'lucide-react'
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
-import { MoreHorizontal } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useFolders } from '@/features/folders/useFolders'
 import { useFiles } from '@/features/files/useFiles'
 import type { Folder, HoneFile } from '@/db/types'
 
 function fileIcon(type: HoneFile['type']) {
-  if (type === 'code') return <Code size={12} className="flex-shrink-0 text-muted" />
-  if (type === 'note' || type === 'notes_ai') return <FileText size={12} className="flex-shrink-0 text-muted" />
-  return <File size={12} className="flex-shrink-0 text-muted" />
+  if (type === 'code') return <Code size={12} className="flex-shrink-0" />
+  if (type === 'note' || type === 'notes_ai') return <FileText size={12} className="flex-shrink-0" />
+  return <File size={12} className="flex-shrink-0" />
 }
 
-interface FileItemProps {
-  file: HoneFile
-  folderId: number
-}
-
-function FileItem({ file, folderId }: FileItemProps) {
+function FileItem({ file, folderId }: { file: HoneFile; folderId: number }) {
   return (
     <NavLink
       to={`/folders/${folderId}/files/${file.id}`}
       className={({ isActive }) =>
         cn(
-          'flex min-h-[32px] items-center gap-1.5 rounded px-2 py-1 text-xs transition-colors',
-          isActive ? 'bg-accent-tint font-semibold text-accent' : 'text-muted hover:bg-line hover:text-ink',
+          'flex min-h-[30px] items-center gap-1.5 rounded-md px-2 py-1 text-xs transition-colors',
+          isActive
+            ? 'bg-white/10 font-medium text-cream'
+            : 'text-sidebar-muted hover:bg-white/5 hover:text-sidebar-text',
         )
       }
     >
@@ -59,19 +55,16 @@ function FolderRow({ folder, onRename, onDelete }: FolderRowProps) {
     <div>
       <div
         className={cn(
-          'group flex min-h-[36px] items-center gap-1 rounded-btn px-1 py-1 text-sm transition-colors',
-          isActive ? 'bg-accent-tint text-accent' : 'text-ink hover:bg-line',
+          'group flex min-h-[34px] items-center gap-1 rounded-btn px-1.5 py-1 text-sm transition-colors',
+          isActive ? 'bg-white/10 text-cream' : 'text-sidebar-text hover:bg-white/5',
         )}
       >
         <button
           onClick={handleToggle}
-          className="flex flex-shrink-0 items-center gap-1 rounded p-0.5"
+          className="flex flex-shrink-0 items-center rounded p-0.5 text-sidebar-muted hover:text-sidebar-text"
           aria-label={open ? 'Collapse' : 'Expand'}
         >
-          <ChevronRight
-            size={13}
-            className={cn('transition-transform', open && 'rotate-90')}
-          />
+          <ChevronRight size={13} className={cn('transition-transform', open && 'rotate-90')} />
         </button>
 
         <NavLink
@@ -85,7 +78,7 @@ function FolderRow({ folder, onRename, onDelete }: FolderRowProps) {
         <DropdownMenu.Root>
           <DropdownMenu.Trigger asChild>
             <button
-              className="hidden rounded p-0.5 hover:bg-line group-hover:flex"
+              className="hidden rounded p-0.5 text-sidebar-muted hover:text-cream group-hover:flex"
               aria-label="Folder options"
               onClick={(e) => e.stopPropagation()}
             >
@@ -96,11 +89,11 @@ function FolderRow({ folder, onRename, onDelete }: FolderRowProps) {
             <DropdownMenu.Content
               align="start"
               sideOffset={4}
-              className="z-50 min-w-[140px] rounded-card border border-line bg-white py-1 shadow-card"
+              className="z-50 min-w-[140px] rounded-card border border-line bg-surface py-1 shadow-lg"
             >
               <DropdownMenu.Item
                 onSelect={() => onRename(folder)}
-                className="cursor-pointer px-3 py-2 text-sm text-ink outline-none hover:bg-bg"
+                className="cursor-pointer px-3 py-2 text-sm text-ink outline-none hover:bg-surface-2"
               >
                 Rename
               </DropdownMenu.Item>
@@ -116,12 +109,12 @@ function FolderRow({ folder, onRename, onDelete }: FolderRowProps) {
       </div>
 
       {open && (
-        <div className="ml-3 flex flex-col gap-0.5 border-l border-line pl-2">
+        <div className="ml-3.5 mt-0.5 flex flex-col gap-0.5 border-l border-white/10 pl-2">
           {files.map((f) => (
             <FileItem key={f.id} file={f} folderId={folder.id!} />
           ))}
           {files.length === 0 && (
-            <p className="py-1 text-[11px] text-muted">No files yet</p>
+            <p className="py-1 pl-1 text-[11px] text-sidebar-muted">No files yet</p>
           )}
         </div>
       )}
@@ -138,7 +131,7 @@ export function FolderTree({ onRename, onDelete }: FolderTreeProps) {
   const folders = useFolders()
 
   if (folders.length === 0) {
-    return <p className="px-3 text-xs text-muted">No folders yet.</p>
+    return <p className="px-3 text-xs text-sidebar-muted">No folders yet.</p>
   }
 
   return (
