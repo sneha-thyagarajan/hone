@@ -1,0 +1,54 @@
+/* ─── Google Fonts ────────────────────────────────────────────────────────── */
+@import url("https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,700;1,9..144,500&family=IBM+Plex+Mono:wght@400;500&display=swap");
+
+@import "tailwindcss";
+
+/* ─── Design tokens ──────────────────────────────────────────────────────── */
+@theme {
+  /* Colors */
+  --color-bg: #f5f5fa;
+  --color-ink: #1e2140;
+  --color-muted: #5f6280;
+  --color-line: #e6e6f0;
+
+  --color-accent: #5a52e0;
+  --color-accent-dark: #4a42c8;
+  --color-accent-tint: #ecebfd;
+
+  --color-success: #2f9e80;
+  --color-success-text: #17705a;
+  --color-success-tint: #dff3eb;
+
+  --color-amber: #946012;
+  --color-amber-tint: #fbf0dc;
+
+  --color-danger-text: #b23a31;
+  --color-danger-tint: #fce9e6;
+
+  --color-code: #14162b;
+
+  /* Typography */
+  --font-sans: "DM Sans", sans-serif;
+  --font-serif: "Fraunces", serif;
+  --font-mono: "IBM Plex Mono", monospace;
+
+  /* Radius */
+  --radius-card: 14px;
+  --radius-btn: 10px;
+
+  /* Shadows */
+  --shadow-card: 0 1px 4px 0 rgb(30 33 64 / 0.06), 0 0 0 1px rgb(30 33 64 / 0.04);
+}
+
+/* ─── Base ───────────────────────────────────────────────────────────────── */
+@layer base {
+  body {
+    @apply bg-bg font-sans text-ink antialiased;
+  }
+
+  h1,
+  h2,
+  h3 {
+    @apply font-serif;
+  }
+}
