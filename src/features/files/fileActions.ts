@@ -34,6 +34,11 @@ export async function saveFileContent(id: number, content: string): Promise<void
   await db.files.update(id, { content, updatedAt: Date.now() })
 }
 
+/** Mark a file as just opened (powers Home's "Continue studying"). */
+export async function touchFile(id: number): Promise<void> {
+  await db.files.update(id, { openedAt: Date.now() })
+}
+
 /** Deletes a file and its chunks and attempts. */
 export async function deleteFile(id: number): Promise<void> {
   await db.transaction('rw', db.files, db.chunks, db.attempts, async () => {

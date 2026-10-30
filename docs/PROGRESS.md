@@ -4,15 +4,29 @@ Updated after every step. A milestone is ticked only when it passes lint + typec
 
 ---
 
-## Health check (last run: UI redesign + theming)
+## Health check (last run: planner + home completion)
 
 | Check | Result |
 |-------|--------|
 | `pnpm typecheck` | ✅ pass |
 | `pnpm lint` | ✅ pass (0 warnings) |
-| `pnpm test` | ✅ 17/17 pass |
+| `pnpm test` | ✅ 78/78 pass |
 | `pnpm dev` | ✅ serves on :5173 |
-| `pnpm build` | ✅ builds (chunk-size warning only – expected until code-splitting) |
+| `pnpm build` | ✅ builds (worker chunks emitted; chunk-size warning only) |
+
+> End-to-end upload (drop a real file → parse → view) needs manual browser
+> verification — parser/chunker logic is covered by unit tests with fixtures.
+
+### Folders & notes polish (closes several gaps below)
+- Folder "..." menu (Rename / Edit exam date / Delete) on the **folder page** and
+  in the **sidebar**, via a shared `FolderActionsMenu`; delete keeps its confirm dialog.
+- New `EditExamDateDialog`; toast messages on folder create / rename / delete / exam-date.
+- Note editor: breadcrumb, formatting toolbar (bold, italic, heading, list, code),
+  empty-editor placeholder, live word count. Fixed an async-mount bug where the
+  editor could initialise before the file loaded.
+- Friendly, distinct empty states for an empty folder vs an empty filter tab.
+- Toast system (`src/lib/toast.ts` + `Toaster`), no new dependency.
+- New tests: markdown commands + word count, toast store, `updateFolderExamDate`.
 
 ---
 
@@ -27,6 +41,74 @@ a **light + dark theme toggle** (persisted to localStorage, `.dark` on `<html>`)
   **salmon = identity/highlight** (kind badges, NOTE badges, headings in dark).
 - Reusable primitives: `components/ui/{Button, ProgressBar, ThemeToggle, ComingSoon}`.
 - Theme-aware tokens in `src/index.css`; `src/lib/theme.ts` holds the toggle store.
+
+---
+
+## Mockup gap analysis
+
+Comparison of the running app against the design mockups (the 8-screen PDF in
+the project brief). **Note:** there is no `docs/design/` folder on disk yet — the
+mockups live in the brief, so they should be exported into `docs/design/` for
+future contributors. This audit uses **layout and content only**; the current
+teal + salmon palette and dark mode are intentional and are *not* gaps.
+
+Legend: ✅ matches · ⚠️ partial · ❌ missing · **[AI]** needs the AI layer ·
+**[data]** needs quiz/attempt/task data that doesn't exist yet · **[no-AI]** can
+be built with no AI and no new data source.
+
+### Screen 1 · Home
+- ✅ Sidebar (Home, Planner, folder tree, New folder) · **[no-AI]**
+- ✅ Upcoming exams with countdowns + readiness · **[no-AI]**
+- ✅ Folder cards with file count, exam countdown, readiness · **[no-AI]**
+- ⚠️ Header reads greeting ("Good afternoon") not the mockup's "Today" title · **[no-AI]**
+- ❌ "Continue studying" card (resume in-progress quiz, "question 3 of 10") · **[data]** (needs quiz progress/attempts)
+- ❌ "Today's plan" checklist · **[no-AI]** for the to-do list itself (tasks table); the *auto-planning* ("from your exam dates and quiz results") is **[data]/[AI]**
+- ❌ "Agent suggestions" (weakest topic → Make flashcards, few notes → Add notes) · **[AI]** + **[data]**
+- ❌ "Open planner" button inside the exams card · **[no-AI]**
+
+### Screen 2 · Create folder dialog
+- ✅ Name, kind (theory/coding/mixed), optional exam date, Cancel / Create · **[no-AI]** — matches mockup.
+
+### Screen 3 · Folder workspace
+- ✅ Breadcrumb, title, kind badge, exam countdown badge, + New file · **[no-AI]**
+- ✅ File list with All / Notes / Uploads / AI-made / Practice tabs + type badges · **[no-AI]**
+- ⚠️ Stats row: has Readiness, Files, Exam. Mockup shows **Readiness, Quizzes taken (avg score), Weak topics**. "Files" and "Exam" substitute for the last two · **[data]** (quizzes taken + weak topics need attempts)
+- ❌ AI agent panel on the right (choose Notes/Flashcards/Quiz/Mock, tick source notes, count + difficulty options, Generate) · **[AI]**
+
+### Screen 4 · Add file menu
+- ✅ Upload files, Blank note, Code practice present and working · **[no-AI]**
+- ⚠️ "AI-generated file" item present but disabled · **[AI]**
+
+### Screen 5 · Note editor
+- ✅ Markdown editor + live preview, inline rename, delete · **[no-AI]**
+- ⚠️ Autosave + "Saved" status instead of an explicit **Save** button (arguably better; note as a deliberate divergence) · **[no-AI]**
+- ❌ Summarise / Make flashcards / Make quiz buttons · **[AI]**
+
+### Screen 6 · Study session
+- ❌ Entire screen is a "coming soon" placeholder. Mockup: focus mode (no sidebar), card counter "7 of 15", progress bar, Question/Answer flip, source citation, Again/Hard/Good/Easy ratings, keyboard hints · **[no-AI]** (the viewer + spaced-repetition is plain logic; it only needs flashcard files, which may be hand-made or AI-made)
+
+### Screen 7 · Code practice
+- ❌ Entire screen is a "coming soon" placeholder. Breakdown:
+  - Editor + language selector + Run tests + test results + saved attempts · **[no-AI]** (CodeMirror + Pyodide/JS worker runner)
+  - Problem statement "made by the agent from your notes" + **Get hint** · **[AI]**
+
+### Screen 8 · Planner
+- ❌ Entire screen is a "coming soon" placeholder. Breakdown:
+  - Month calendar, exam/study events, countdowns, selected-day agenda, **+ Add event** · **[no-AI]**
+  - "Weak topics · N missed sessions · Reschedule" · **[data]**
+  - **Generate study plan** · **[AI]** (study plan is an AI output type per the brief)
+
+### Settings (required by brief, not a numbered mockup)
+- ❌ "coming soon" placeholder. Needs provider / base URL / model / API key / Test connection · **[AI]**
+
+### Cross-cutting
+- ✅ Shared sidebar + folder tree + routing · **[no-AI]**
+- ❌ Readiness/quizzes/weak-topics everywhere currently show 0 / absent until the **quiz + attempts** features exist · **[data]**
+
+### Summary — what's left, by dependency
+- **No AI, buildable now:** Study-session viewer + SRS (Step 4), Code editor + runner + attempts (Step 5, minus hint/problem-gen), Planner calendar + countdowns + agenda + add-event + to-do list (Step 7), Home "Continue" + "Today's plan" list, "Open planner" link, folder-workspace "quizzes taken / weak topics" once attempts exist.
+- **Needs the AI layer (Step 6):** folder AI agent panel, note-editor Summarise/Make flashcards/Make quiz, Home agent suggestions, code-practice problem generation + Get hint, Planner "Generate study plan", AI-generated-file menu action, Settings provider config.
+- **Needs quiz/attempt/task data first:** readiness > 0, quizzes-taken + average score, weak topics, Home "Continue" card, missed-sessions.
 
 ---
 
@@ -56,12 +138,34 @@ a **light + dark theme toggle** (persisted to localStorage, `.dark` on `<html>`)
 - [x] File type dispatcher – routes `/files/:id` to the right editor by `file.type`
 - [x] Unit tests – file create / rename / delete / autosave (17 total)
 
-### Step 3 · File upload & parsing ⬜
-- [ ] Drag-and-drop + file picker (PDF, PPT/PPTX, DOCX)
-- [ ] pdf.js → extract text + page chunks
-- [ ] JSZip → PPTX slide XML → text
-- [ ] mammoth → DOCX → Markdown
-- [ ] Store chunks in Dexie
+### Step 3 · File upload & parsing ✅
+- [x] Drag-and-drop + "Upload files" picker (PDF, PPTX, DOCX, Markdown, TXT)
+- [x] pdf.js → extract text + per-page chunks
+- [x] JSZip → PPTX slide XML → per-slide text
+- [x] mammoth → DOCX → text
+- [x] Markdown / TXT decoded as UTF-8
+- [x] Parsing runs in a Web Worker (pdf.js uses its own worker)
+- [x] Original blob stored in `blobs` table (Dexie v2); chunks saved with source + page
+- [x] Upload progress toasts + friendly errors
+- [x] Viewer shows extracted text by page
+- [x] Unit tests: chunker + each parser with in-memory fixtures (36 total)
+
+### Step 7 · Planner ✅ (AI study-plan generator intentionally excluded)
+- [x] Month calendar with exam + study events, prev/next month
+- [x] Calendar merges folder exam dates + user events (`useCalendarItems`)
+- [x] Add-event dialog (title, date, folder, kind)
+- [x] Selected-day agenda (events + that day's to-dos)
+- [x] Countdowns panel — per-exam countdown + readiness bar (`ExamCountdowns`, shared with Home)
+- [x] `tasks` table actions/hooks + reusable `TodoList`
+- [x] Countdowns & readiness are plain calculations (no AI)
+- [~] "Generate study plan" — deliberately **not** built (that's the AI layer)
+
+### Step 8 · Home screen ✅ (agent suggestions deferred to AI layer)
+- [x] "Continue studying" card (most recently opened note/practice/study file via `openedAt`)
+- [x] Today's plan widget (tasks due today, checkboxes, quick-add)
+- [x] Upcoming exams countdown strip (shared `ExamCountdowns`)
+- [x] Folder cards grid with readiness
+- [~] Agent suggestions — deferred (needs AI layer + quiz data)
 
 ### Step 4 · Study session (flashcards + SRS) ⬜
 - [ ] Flashcard viewer – question / answer flip
@@ -87,20 +191,6 @@ a **light + dark theme toggle** (persisted to localStorage, `.dark` on `<html>`)
 - [ ] Zod schemas for each output type
 - [ ] Retry once on bad JSON; save as file with source citations
 - [ ] Settings screen (provider, base URL, model, API key, test connection)
-
-### Step 7 · Planner ⬜
-- [ ] Month calendar (exam events + study sessions)
-- [ ] Countdowns ("27 days") derived from exam dates
-- [ ] Readiness score (weighted average of attempt scores)
-- [ ] Today's plan to-do list
-- [ ] Generate study plan (fills calendar from exam dates)
-
-### Step 8 · Home screen ⬜
-- [ ] "Continue" card (most recent in-progress file)
-- [ ] Today's plan widget
-- [ ] Agent suggestions (weak topics, missing notes)
-- [ ] Upcoming exams countdown strip
-- [ ] Folder cards grid with readiness
 
 ### Step 9 · Polish & PWA ⬜
 - [ ] vite-plugin-pwa (offline-first, installable)

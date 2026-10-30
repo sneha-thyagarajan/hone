@@ -2,6 +2,7 @@ import { useState } from 'react'
 import * as Dialog from '@radix-ui/react-dialog'
 import type { Folder } from '@/db/types'
 import { deleteFolder } from './folderActions'
+import { toast } from '@/lib/toast'
 
 interface Props {
   folder: Folder
@@ -16,6 +17,7 @@ export function DeleteFolderAlert({ folder, open, onOpenChange }: Props) {
     setLoading(true)
     try {
       await deleteFolder(folder.id!)
+      toast.success(`Deleted "${folder.name}"`)
       onOpenChange(false)
     } finally {
       setLoading(false)

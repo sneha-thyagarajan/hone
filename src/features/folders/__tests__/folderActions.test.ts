@@ -1,7 +1,12 @@
 import 'fake-indexeddb/auto'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { db } from '@/db'
-import { createFolder, deleteFolder, renameFolder } from '../folderActions'
+import {
+  createFolder,
+  deleteFolder,
+  renameFolder,
+  updateFolderExamDate,
+} from '../folderActions'
 
 beforeEach(async () => {
   // Reset the DB between tests by clearing all tables
@@ -50,6 +55,20 @@ describe('renameFolder', () => {
   it('throws when the new name is blank', async () => {
     const id = await createFolder({ name: 'Valid', kind: 'coding' })
     await expect(renameFolder(id, '')).rejects.toThrow('Folder name cannot be empty')
+  })
+})
+
+describe('updateFolderExamDate', () => {
+  it('sets an exam date', async () => {
+    const id = await createFolder({ name: 'DS', kind: 'theory' })
+    await updateFolderExamDate(id, '2026-11-13')
+    expect((await db.folders.get(id))?.examDate).toBe('2026-11-13')
+  })
+
+  it('clears the exam date when passed undefined', async () => {
+    const id = await createFolder({ name: 'DS', kind: 'theory', examDate: '2026-11-13' })
+    await updateFolderExamDate(id, undefined)
+    expect((await db.folders.get(id))?.examDate).toBeUndefined()
   })
 })
 

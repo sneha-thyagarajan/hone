@@ -4,6 +4,7 @@ import * as RadioGroup from '@radix-ui/react-radio-group'
 import { cn } from '@/lib/utils'
 import type { FolderKind } from '@/db/types'
 import { createFolder } from './folderActions'
+import { toast } from '@/lib/toast'
 
 interface Props {
   open: boolean
@@ -52,6 +53,7 @@ export function CreateFolderDialog({ open, onOpenChange }: Props) {
     setLoading(true)
     try {
       await createFolder({ name, kind, examDate: examDate || undefined })
+      toast.success(`Created "${name.trim()}"`)
       reset()
       onOpenChange(false)
     } catch (err) {

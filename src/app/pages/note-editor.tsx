@@ -2,12 +2,31 @@ import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import ReactMarkdown from 'react-markdown'
 import rehypeSanitize from 'rehype-sanitize'
-import { Trash2, Check, Loader2, ArrowLeft } from 'lucide-react'
+import {
+  Trash2,
+  Check,
+  Loader2,
+  ArrowLeft,
+  Bold,
+  Italic,
+  Heading2,
+  List,
+  Code2,
+} from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useFile } from '@/features/files/useFiles'
+import { useFolder } from '@/features/folders/useFolders'
 import { deleteFile, renameFile } from '@/features/files/fileActions'
 import { useMarkdownEditor } from '@/features/notes/useMarkdownEditor'
 import { useAutosave } from '@/features/notes/useAutosave'
+import {
+  countWords,
+  toggleHeading,
+  toggleList,
+  toggleWrap,
+  type EditState,
+} from '@/features/notes/markdownCommands'
+import type { HoneFile } from '@/db/types'
 
 function SaveStatusBadge({ status }: { status: 'idle' | 'saving' | 'saved' }) {
   if (status === 'idle') return <span className="text-xs text-muted">Autosaves</span>
@@ -20,7 +39,7 @@ function SaveStatusBadge({ status }: { status: 'idle' | 'saving' | 'saved' }) {
         </>
       ) : (
         <>
-          <Check size={12} className="text-success" />
+          <Check size={12} className="text-success-text" />
           Saved
         </>
       )}
@@ -62,7 +81,7 @@ function InlineRename({ name, fileId }: { name: string; fileId: number }) {
   return (
     <button
       onClick={() => setEditing(true)}
-      className="rounded-md px-1.5 py-0.5 font-serif text-xl font-semibold text-heading transition-colors hover:bg-line"
+      className="rounded-md px-1.5 py-0.5 font-serif text-xl font-semibold text-heading transition-colors hover:bg-surface-2"
       title="Click to rename"
     >
       {name}
@@ -70,59 +89,81 @@ function InlineRename({ name, fileId }: { name: string; fileId: number }) {
   )
 }
 
-export default function NoteEditorPage() {
-  const { folderId, fileId } = useParams()
+function FmtButton({
+  label,
+  onClick,
+  children,
+}: {
+  label: string
+  onClick: () => void
+  children: React.ReactNode
+}) {
+  return (
+    <button
+      type="button"
+      onMouseDown={(e) => e.preventDefault()} // keep editor selection
+      onClick={onClick}
+      title={label}
+      aria-label={label}
+      className="flex h-8 w-8 items-center justify-center rounded-md text-muted transition-colors hover:bg-surface-2 hover:text-ink"
+    >
+      {children}
+    </button>
+  )
+}
+
+function NoteEditorBody({ file, folderId }: { file: HoneFile; folderId?: string }) {
   const navigate = useNavigate()
-  const file = useFile(fileId ? Number(fileId) : undefined)
-  const { save, status } = useAutosave(file?.id)
-
-  const editorRef = useMarkdownEditor({
-    initialValue: file?.content ?? '',
-    onChange: save,
-  })
-
+  const folder = useFolder(file.folderId)
+  const { save, status } = useAutosave(file.id)
+  const [text, setText] = useState(file.content ?? '')
   const [view, setView] = useState<'split' | 'edit' | 'preview'>('split')
 
+  const { containerRef, applyEdit } = useMarkdownEditor({
+    initialValue: file.content ?? '',
+    placeholder: 'Start writing in Markdown…',
+    onChange: (v) => {
+      setText(v)
+      save(v)
+    },
+  })
+
   async function handleDelete() {
-    if (!file) return
     if (!window.confirm(`Delete "${file.name}"? This cannot be undone.`)) return
     await deleteFile(file.id!)
     navigate(`/folders/${folderId}`)
   }
 
-  if (!file) {
-    return <div className="flex flex-1 items-center justify-center text-muted">File not found.</div>
-  }
-
-  if (file.type !== 'note' && file.type !== 'notes_ai') {
-    return (
-      <div className="flex flex-1 items-center justify-center text-muted">
-        This file type has no editor yet.
-      </div>
-    )
-  }
-
   const showEditor = view !== 'preview'
   const showPreview = view !== 'edit'
+  const words = countWords(text)
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
-      {/* Toolbar */}
-      <div className="flex min-h-[60px] items-center gap-3 border-b border-line bg-surface/70 px-6 backdrop-blur">
+      {/* Top toolbar */}
+      <div className="flex min-h-[64px] items-center gap-3 border-b border-line bg-surface/70 px-6 backdrop-blur">
         <button
           onClick={() => navigate(`/folders/${folderId}`)}
-          className="flex h-8 w-8 items-center justify-center rounded-btn text-muted transition-colors hover:bg-line hover:text-ink"
+          className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-btn text-muted transition-colors hover:bg-surface-2 hover:text-ink"
           aria-label="Back to folder"
         >
           <ArrowLeft size={16} />
         </button>
 
-        <div className="flex flex-1 items-center gap-2.5">
-          <InlineRename name={file.name} fileId={file.id!} />
-          <SaveStatusBadge status={status} />
+        <div className="flex min-w-0 flex-1 flex-col">
+          <button
+            onClick={() => navigate(`/folders/${folderId}`)}
+            className="w-fit text-xs font-medium text-muted transition-colors hover:text-ink"
+          >
+            {folder?.name ?? 'Folder'} / Note
+          </button>
+          <div className="flex items-center gap-2.5">
+            <InlineRename name={file.name} fileId={file.id!} />
+            <SaveStatusBadge status={status} />
+            <span className="text-xs text-muted">· {words} {words === 1 ? 'word' : 'words'}</span>
+          </div>
         </div>
 
-        {/* View switcher */}
         <div className="flex rounded-btn border border-line bg-surface p-0.5 text-xs font-medium">
           {(['edit', 'split', 'preview'] as const).map((v) => (
             <button
@@ -147,11 +188,32 @@ export default function NoteEditorPage() {
         </button>
       </div>
 
+      {/* Formatting toolbar */}
+      {showEditor && (
+        <div className="flex items-center gap-0.5 border-b border-line bg-surface/40 px-5 py-1.5">
+          <FmtButton label="Bold" onClick={() => applyEdit((s: EditState) => toggleWrap(s, '**'))}>
+            <Bold size={15} />
+          </FmtButton>
+          <FmtButton label="Italic" onClick={() => applyEdit((s: EditState) => toggleWrap(s, '*'))}>
+            <Italic size={15} />
+          </FmtButton>
+          <FmtButton label="Heading" onClick={() => applyEdit((s) => toggleHeading(s, 2))}>
+            <Heading2 size={15} />
+          </FmtButton>
+          <FmtButton label="Bullet list" onClick={() => applyEdit(toggleList)}>
+            <List size={15} />
+          </FmtButton>
+          <FmtButton label="Inline code" onClick={() => applyEdit((s: EditState) => toggleWrap(s, '`'))}>
+            <Code2 size={15} />
+          </FmtButton>
+        </div>
+      )}
+
       {/* Editor + Preview */}
       <div className="flex flex-1 overflow-hidden">
         {showEditor && (
           <div
-            ref={editorRef}
+            ref={containerRef}
             className={cn(
               'h-full overflow-auto bg-surface',
               showPreview ? 'w-1/2 border-r border-line' : 'w-full',
@@ -166,9 +228,9 @@ export default function NoteEditorPage() {
               showEditor ? 'w-1/2' : 'mx-auto w-full max-w-3xl',
             )}
           >
-            {(file.content ?? '').trim() ? (
+            {text.trim() ? (
               <div className="markdown-body">
-                <ReactMarkdown rehypePlugins={[rehypeSanitize]}>{file.content ?? ''}</ReactMarkdown>
+                <ReactMarkdown rehypePlugins={[rehypeSanitize]}>{text}</ReactMarkdown>
               </div>
             ) : (
               <p className="text-sm italic text-muted">
@@ -180,4 +242,24 @@ export default function NoteEditorPage() {
       </div>
     </div>
   )
+}
+
+export default function NoteEditorPage() {
+  const { folderId, fileId } = useParams()
+  const file = useFile(fileId ? Number(fileId) : undefined)
+
+  if (!file) {
+    return <div className="flex flex-1 items-center justify-center text-muted">File not found.</div>
+  }
+
+  if (file.type !== 'note' && file.type !== 'notes_ai') {
+    return (
+      <div className="flex flex-1 items-center justify-center text-muted">
+        This file type has no editor yet.
+      </div>
+    )
+  }
+
+  // Remount the editor when switching between notes so it re-seeds its content.
+  return <NoteEditorBody key={file.id} file={file} folderId={folderId} />
 }

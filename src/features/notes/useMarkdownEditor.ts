@@ -1,18 +1,20 @@
-import { useEffect, useLayoutEffect, useRef } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef } from 'react'
 import { EditorState } from '@codemirror/state'
-import { EditorView, keymap, lineNumbers } from '@codemirror/view'
+import { EditorView, keymap, lineNumbers, placeholder as cmPlaceholder } from '@codemirror/view'
 import { defaultKeymap, history, historyKeymap } from '@codemirror/commands'
 import { markdown, markdownLanguage } from '@codemirror/lang-markdown'
 import { languages } from '@codemirror/language-data'
 import { syntaxHighlighting, defaultHighlightStyle } from '@codemirror/language'
+import type { EditResult, EditState } from './markdownCommands'
 
 interface UseMarkdownEditorOptions {
   initialValue: string
   onChange: (value: string) => void
+  placeholder?: string
 }
 
-/** Returns a ref to attach to the container div. */
-export function useMarkdownEditor({ initialValue, onChange }: UseMarkdownEditorOptions) {
+/** Returns a container ref plus `applyEdit` for the formatting toolbar. */
+export function useMarkdownEditor({ initialValue, onChange, placeholder }: UseMarkdownEditorOptions) {
   const containerRef = useRef<HTMLDivElement>(null)
   const viewRef = useRef<EditorView | null>(null)
   // Keep onChange stable in the closure
@@ -21,6 +23,20 @@ export function useMarkdownEditor({ initialValue, onChange }: UseMarkdownEditorO
   useLayoutEffect(() => {
     onChangeRef.current = onChange
   })
+
+  /** Apply a pure text transform to the current selection and refocus. */
+  const applyEdit = useCallback((transform: (s: EditState) => EditResult) => {
+    const view = viewRef.current
+    if (!view) return
+    const { from, to } = view.state.selection.main
+    const text = view.state.doc.toString()
+    const result = transform({ text, from, to })
+    view.dispatch({
+      changes: { from: 0, to: text.length, insert: result.text },
+      selection: { anchor: result.from, head: result.to },
+    })
+    view.focus()
+  }, [])
 
   useEffect(() => {
     if (!containerRef.current) return
@@ -64,6 +80,7 @@ export function useMarkdownEditor({ initialValue, onChange }: UseMarkdownEditorO
         lineNumbers(),
         markdown({ base: markdownLanguage, codeLanguages: languages }),
         syntaxHighlighting(defaultHighlightStyle),
+        ...(placeholder ? [cmPlaceholder(placeholder)] : []),
         theme,
         updateListener,
         EditorView.lineWrapping,
@@ -82,5 +99,6 @@ export function useMarkdownEditor({ initialValue, onChange }: UseMarkdownEditorO
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  return containerRef
+  return { containerRef, applyEdit }
 }
+

@@ -4,14 +4,9 @@ import { NavItem } from './NavItem'
 import { FolderTree } from './FolderTree'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
 import { CreateFolderDialog } from '@/features/folders/CreateFolderDialog'
-import { RenameFolderDialog } from '@/features/folders/RenameFolderDialog'
-import { DeleteFolderAlert } from '@/features/folders/DeleteFolderAlert'
-import type { Folder } from '@/db/types'
 
 export function Sidebar() {
   const [createOpen, setCreateOpen] = useState(false)
-  const [folderToRename, setFolderToRename] = useState<Folder | null>(null)
-  const [folderToDelete, setFolderToDelete] = useState<Folder | null>(null)
 
   return (
     <>
@@ -43,10 +38,7 @@ export function Sidebar() {
             Folders
           </p>
           <div className="min-h-0 flex-1 overflow-y-auto">
-            <FolderTree
-              onRename={(f) => setFolderToRename(f)}
-              onDelete={(f) => setFolderToDelete(f)}
-            />
+            <FolderTree />
           </div>
         </div>
 
@@ -63,22 +55,6 @@ export function Sidebar() {
       </aside>
 
       <CreateFolderDialog open={createOpen} onOpenChange={setCreateOpen} />
-
-      {folderToRename && (
-        <RenameFolderDialog
-          folder={folderToRename}
-          open={!!folderToRename}
-          onOpenChange={(v) => !v && setFolderToRename(null)}
-        />
-      )}
-
-      {folderToDelete && (
-        <DeleteFolderAlert
-          folder={folderToDelete}
-          open={!!folderToDelete}
-          onOpenChange={(v) => !v && setFolderToDelete(null)}
-        />
-      )}
     </>
   )
 }

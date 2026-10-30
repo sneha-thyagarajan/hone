@@ -1,14 +1,15 @@
 import { useState } from 'react'
-import { format } from 'date-fns'
-import { Plus, FolderPlus, CalendarClock, Sparkles } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { format, formatDistanceToNow } from 'date-fns'
+import { Plus, FolderPlus, CalendarClock, Sparkles, PlayCircle, ListChecks } from 'lucide-react'
 import { useFolders } from '@/features/folders/useFolders'
 import { FolderCard } from '@/features/folders/FolderCard'
 import { CreateFolderDialog } from '@/features/folders/CreateFolderDialog'
-import { useReadiness } from '@/features/folders/useReadiness'
+import { ExamCountdowns } from '@/features/planner/ExamCountdowns'
+import { useContinueFile } from '@/features/files/useContinue'
+import { TodoList } from '@/features/tasks/TodoList'
 import { Button } from '@/components/ui/Button'
-import { ProgressBar } from '@/components/ui/ProgressBar'
-import { daysUntil } from '@/lib/dates'
-import type { Folder } from '@/db/types'
+import { toISODate } from '@/lib/dates'
 
 function greeting() {
   const h = new Date().getHours()
@@ -17,35 +18,43 @@ function greeting() {
   return 'Good evening'
 }
 
-function ExamRow({ folder }: { folder: Folder }) {
-  const readiness = useReadiness(folder.id)
-  const days = daysUntil(folder.examDate)
+const TYPE_LABEL: Record<string, string> = {
+  note: 'Note',
+  notes_ai: 'Note',
+  code: 'Code practice',
+  flashcards: 'Flashcards',
+}
+
+function ContinueCard() {
+  const file = useContinueFile()
+  const navigate = useNavigate()
+  if (!file) return null
+
   return (
-    <div className="flex flex-col gap-2 py-3">
-      <div className="flex items-center justify-between gap-2">
-        <span className="truncate text-sm font-semibold text-ink">{folder.name}</span>
-        <span className="whitespace-nowrap text-sm font-bold text-pink-text">
-          {days !== null && days >= 0 ? `${days} days` : '—'}
-        </span>
+    <button
+      onClick={() => navigate(`/folders/${file.folderId}/files/${file.id}`)}
+      className="card-hover flex items-center justify-between gap-4 rounded-card border border-line bg-surface p-5 text-left shadow-card"
+    >
+      <div className="min-w-0">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted">Continue</p>
+        <h3 className="mt-1 truncate font-serif text-lg font-semibold text-heading">{file.name}</h3>
+        <p className="mt-0.5 text-xs text-muted">
+          {TYPE_LABEL[file.type] ?? 'File'} · opened{' '}
+          {formatDistanceToNow(file.openedAt!, { addSuffix: true })}
+        </p>
       </div>
-      <div className="flex items-center gap-2">
-        <ProgressBar value={readiness} className="h-1.5" />
-        <span className="w-9 text-right text-[11px] text-muted">{readiness}%</span>
-      </div>
-      <p className="text-[11px] text-muted">
-        {folder.examDate ? format(new Date(folder.examDate), 'EEE d MMM') : ''}
-      </p>
-    </div>
+      <span className="btn-primary flex items-center gap-1.5 rounded-btn px-4 py-2.5 text-sm font-semibold">
+        <PlayCircle size={16} />
+        Resume
+      </span>
+    </button>
   )
 }
 
 export default function HomePage() {
   const folders = useFolders()
   const [createOpen, setCreateOpen] = useState(false)
-
-  const upcoming = folders
-    .filter((f) => f.examDate && (daysUntil(f.examDate) ?? -1) >= 0)
-    .sort((a, b) => (daysUntil(a.examDate) ?? 0) - (daysUntil(b.examDate) ?? 0))
+  const todayIso = toISODate(new Date())
 
   return (
     <div className="mx-auto w-full max-w-6xl flex-1 px-8 py-10">
@@ -70,7 +79,9 @@ export default function HomePage() {
             <FolderPlus size={26} className="text-cream" />
           </div>
           <div>
-            <h2 className="font-serif text-xl font-semibold text-heading">Create your first folder</h2>
+            <h2 className="font-serif text-xl font-semibold text-heading">
+              Create your first folder
+            </h2>
             <p className="mt-1 max-w-sm text-sm text-muted">
               One folder per subject. Add notes, generate flashcards and quizzes, and track how
               ready you are for each exam.
@@ -83,37 +94,41 @@ export default function HomePage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-          {/* Folder grid */}
-          <div className="lg:col-span-2">
-            <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-muted">
-              <Sparkles size={14} className="text-accent" />
-              Your folders
-            </h2>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              {folders.map((f) => (
-                <FolderCard key={f.id} folder={f} />
-              ))}
+          {/* Left column */}
+          <div className="flex flex-col gap-6 lg:col-span-2">
+            <ContinueCard />
+
+            {/* Today's plan */}
+            <div className="rounded-card border border-line bg-surface p-5 shadow-card">
+              <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-muted">
+                <ListChecks size={14} className="text-accent" />
+                Today's plan
+              </h2>
+              <TodoList date={todayIso} emptyText="Nothing planned for today — add a task below." />
+            </div>
+
+            {/* Folders */}
+            <div>
+              <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-muted">
+                <Sparkles size={14} className="text-accent" />
+                Your folders
+              </h2>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                {folders.map((f) => (
+                  <FolderCard key={f.id} folder={f} />
+                ))}
+              </div>
             </div>
           </div>
 
-          {/* Upcoming exams */}
+          {/* Right column */}
           <div>
             <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-muted">
               <CalendarClock size={14} className="text-accent" />
               Upcoming exams
             </h2>
             <div className="rounded-card border border-line bg-surface p-5 shadow-card">
-              {upcoming.length === 0 ? (
-                <p className="py-6 text-center text-sm text-muted">
-                  No exam dates set yet. Add one when you create or edit a folder.
-                </p>
-              ) : (
-                <div className="divide-y divide-line">
-                  {upcoming.map((f) => (
-                    <ExamRow key={f.id} folder={f} />
-                  ))}
-                </div>
-              )}
+              <ExamCountdowns />
             </div>
           </div>
         </div>

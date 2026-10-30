@@ -35,6 +35,8 @@ export interface HoneFile {
   sources?: SourceRef[]
   createdAt: number
   updatedAt: number
+  /** When the file was last opened (for "Continue studying"). */
+  openedAt?: number
 }
 
 export interface SourceRef {
@@ -83,4 +85,12 @@ export interface Task {
 export interface Setting {
   key: string
   value: unknown
+}
+
+/** Original uploaded file bytes, referenced by HoneFile.blobId. */
+export interface BlobRecord {
+  id: string
+  name: string
+  type: string
+  data: Blob
 }

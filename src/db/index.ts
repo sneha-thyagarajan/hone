@@ -1,5 +1,14 @@
 import Dexie, { type Table } from 'dexie'
-import type { Attempt, CalEvent, Chunk, Folder, HoneFile, Setting, Task } from './types'
+import type {
+  Attempt,
+  BlobRecord,
+  CalEvent,
+  Chunk,
+  Folder,
+  HoneFile,
+  Setting,
+  Task,
+} from './types'
 
 class HoneDB extends Dexie {
   folders!: Table<Folder>
@@ -9,6 +18,7 @@ class HoneDB extends Dexie {
   events!: Table<CalEvent>
   tasks!: Table<Task>
   settings!: Table<Setting>
+  blobs!: Table<BlobRecord>
 
   constructor() {
     super('hone')
@@ -20,6 +30,10 @@ class HoneDB extends Dexie {
       events: '++id, folderId, date',
       tasks: '++id, folderId, date',
       settings: 'key',
+    })
+    // v2: store original uploaded file blobs
+    this.version(2).stores({
+      blobs: 'id',
     })
   }
 }

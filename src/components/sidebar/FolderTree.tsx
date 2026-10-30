@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { NavLink, useNavigate, useParams } from 'react-router-dom'
-import { ChevronRight, FileText, Code, File, MoreHorizontal } from 'lucide-react'
-import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
+import { ChevronRight, FileText, Code, File } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useFolders } from '@/features/folders/useFolders'
 import { useFiles } from '@/features/files/useFiles'
+import { FolderActionsMenu } from '@/features/folders/FolderActionsMenu'
 import type { Folder, HoneFile } from '@/db/types'
 
 function fileIcon(type: HoneFile['type']) {
@@ -34,11 +34,9 @@ function FileItem({ file, folderId }: { file: HoneFile; folderId: number }) {
 
 interface FolderRowProps {
   folder: Folder
-  onRename: (folder: Folder) => void
-  onDelete: (folder: Folder) => void
 }
 
-function FolderRow({ folder, onRename, onDelete }: FolderRowProps) {
+function FolderRow({ folder }: FolderRowProps) {
   const { folderId: activeFolderId } = useParams()
   const isActive = activeFolderId === String(folder.id)
   const [open, setOpen] = useState(isActive)
@@ -75,37 +73,7 @@ function FolderRow({ folder, onRename, onDelete }: FolderRowProps) {
           {folder.name}
         </NavLink>
 
-        <DropdownMenu.Root>
-          <DropdownMenu.Trigger asChild>
-            <button
-              className="hidden rounded p-0.5 text-sidebar-muted hover:text-cream group-hover:flex"
-              aria-label="Folder options"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <MoreHorizontal size={13} />
-            </button>
-          </DropdownMenu.Trigger>
-          <DropdownMenu.Portal>
-            <DropdownMenu.Content
-              align="start"
-              sideOffset={4}
-              className="z-50 min-w-[140px] rounded-card border border-line bg-surface py-1 shadow-lg"
-            >
-              <DropdownMenu.Item
-                onSelect={() => onRename(folder)}
-                className="cursor-pointer px-3 py-2 text-sm text-ink outline-none hover:bg-surface-2"
-              >
-                Rename
-              </DropdownMenu.Item>
-              <DropdownMenu.Item
-                onSelect={() => onDelete(folder)}
-                className="cursor-pointer px-3 py-2 text-sm text-danger-text outline-none hover:bg-danger-tint"
-              >
-                Delete
-              </DropdownMenu.Item>
-            </DropdownMenu.Content>
-          </DropdownMenu.Portal>
-        </DropdownMenu.Root>
+        <FolderActionsMenu folder={folder} variant="sidebar" />
       </div>
 
       {open && (
@@ -122,12 +90,7 @@ function FolderRow({ folder, onRename, onDelete }: FolderRowProps) {
   )
 }
 
-interface FolderTreeProps {
-  onRename: (folder: Folder) => void
-  onDelete: (folder: Folder) => void
-}
-
-export function FolderTree({ onRename, onDelete }: FolderTreeProps) {
+export function FolderTree() {
   const folders = useFolders()
 
   if (folders.length === 0) {
@@ -137,7 +100,7 @@ export function FolderTree({ onRename, onDelete }: FolderTreeProps) {
   return (
     <div className="flex flex-col gap-0.5">
       {folders.map((folder) => (
-        <FolderRow key={folder.id} folder={folder} onRename={onRename} onDelete={onDelete} />
+        <FolderRow key={folder.id} folder={folder} />
       ))}
     </div>
   )

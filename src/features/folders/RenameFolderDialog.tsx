@@ -3,6 +3,7 @@ import * as Dialog from '@radix-ui/react-dialog'
 import { cn } from '@/lib/utils'
 import type { Folder } from '@/db/types'
 import { renameFolder } from './folderActions'
+import { toast } from '@/lib/toast'
 
 interface Props {
   folder: Folder
@@ -24,6 +25,7 @@ export function RenameFolderDialog({ folder, open, onOpenChange }: Props) {
     setLoading(true)
     try {
       await renameFolder(folder.id!, name)
+      toast.success('Folder renamed')
       onOpenChange(false)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong.')
