@@ -6,16 +6,20 @@ import { cn } from '@/lib/utils'
 import { createFile } from './fileActions'
 import { useUploadStore } from './upload/uploadStore'
 import { ACCEPT_EXTENSIONS } from '@/parsers/types'
+import { getAllowedTools } from '@/features/folders/tools'
+import type { FolderKind } from '@/db/types'
 
 interface Props {
   folderId: number
+  kind: FolderKind
 }
 
-export function NewFileMenu({ folderId }: Props) {
+export function NewFileMenu({ folderId, kind }: Props) {
   const navigate = useNavigate()
   const [open, setOpen] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const startUploads = useUploadStore((s) => s.startUploads)
+  const tools = getAllowedTools(kind)
 
   async function handleBlankNote() {
     const id = await createFile({ folderId, type: 'note', name: 'Untitled note' })
@@ -75,27 +79,31 @@ export function NewFileMenu({ folderId }: Props) {
               </div>
             </DropdownMenu.Item>
 
-            <DropdownMenu.Item
-              onSelect={handleBlankNote}
-              className="flex cursor-pointer items-start gap-3 px-4 py-2.5 outline-none hover:bg-surface-2"
-            >
-              <FileText size={16} className="mt-0.5 flex-shrink-0 text-accent" />
-              <div>
-                <p className="text-sm font-medium text-ink">Blank note</p>
-                <p className="text-xs text-muted">Write Markdown notes</p>
-              </div>
-            </DropdownMenu.Item>
+            {tools.canNote && (
+              <DropdownMenu.Item
+                onSelect={handleBlankNote}
+                className="flex cursor-pointer items-start gap-3 px-4 py-2.5 outline-none hover:bg-surface-2"
+              >
+                <FileText size={16} className="mt-0.5 flex-shrink-0 text-accent" />
+                <div>
+                  <p className="text-sm font-medium text-ink">Blank note</p>
+                  <p className="text-xs text-muted">Write Markdown notes</p>
+                </div>
+              </DropdownMenu.Item>
+            )}
 
-            <DropdownMenu.Item
-              onSelect={handleCodePractice}
-              className="flex cursor-pointer items-start gap-3 px-4 py-2.5 outline-none hover:bg-surface-2"
-            >
-              <Code size={16} className="mt-0.5 flex-shrink-0 text-accent" />
-              <div>
-                <p className="text-sm font-medium text-ink">Code practice</p>
-                <p className="text-xs text-muted">Python or JavaScript editor</p>
-              </div>
-            </DropdownMenu.Item>
+            {tools.canCode && (
+              <DropdownMenu.Item
+                onSelect={handleCodePractice}
+                className="flex cursor-pointer items-start gap-3 px-4 py-2.5 outline-none hover:bg-surface-2"
+              >
+                <Code size={16} className="mt-0.5 flex-shrink-0 text-accent" />
+                <div>
+                  <p className="text-sm font-medium text-ink">Code practice</p>
+                  <p className="text-xs text-muted">Python, JavaScript or Java editor</p>
+                </div>
+              </DropdownMenu.Item>
+            )}
 
             <DropdownMenu.Separator className="my-1 h-px bg-line" />
 

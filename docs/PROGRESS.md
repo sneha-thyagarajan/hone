@@ -4,15 +4,37 @@ Updated after every step. A milestone is ticked only when it passes lint + typec
 
 ---
 
-## Health check (last run: planner + home completion)
+## Health check (last run: folder-kind rules + tabbed code notes)
 
 | Check | Result |
 |-------|--------|
 | `pnpm typecheck` | ✅ pass |
 | `pnpm lint` | ✅ pass (0 warnings) |
-| `pnpm test` | ✅ 78/78 pass |
+| `pnpm test` | ✅ 103/103 pass |
 | `pnpm dev` | ✅ serves on :5173 |
-| `pnpm build` | ✅ builds (worker chunks emitted; chunk-size warning only) |
+| `pnpm build` | ✅ builds (runner + parser workers emitted; chunk-size warning only) |
+
+> Runner execution (actual Python via Pyodide, JS worker, timeout kill) and the
+> code notes panel's image paste/drop/resize need manual browser verification.
+> Pure logic (harness, tab ops, folder rules) is unit-tested.
+
+### Folder-kind rules (`getAllowedTools`)
+- theory: notes + uploads + AI files; no code practice.
+- coding: uploads + code practice + AI (incl. coding problems); **no standalone
+  notes** — Blank-note item and Notes filter tab hidden.
+- mixed: everything. Changing kind never deletes files; disallowed types stay
+  under "All". `deleteFile` now also cleans the upload blob + note-image blobs.
+
+### Code practice notes panel (tabbed)
+- Tabs: Problem (fixed) + add Text (Markdown) / Image tabs; rename (dbl-click),
+  reorder (drag), delete (confirm). Persisted in file meta with autosave.
+- Image tabs: paste / drag-drop / picker, stacked, click to enlarge (lightbox),
+  resized to ≤1600px on import, stored as blobs; deleting a tab/image frees blobs.
+  Hint shown that images aren't read by the AI.
+- Resizable + collapsible panel, `role="tablist"` + keyboard nav + focus rings.
+- ⚠️ Study-pack export/import does not exist yet, so there was nothing to wire
+  image-inclusion into. Images are stored as blob-ids in meta, so they'll be
+  export-ready when that feature is built.
 
 > End-to-end upload (drop a real file → parse → view) needs manual browser
 > verification — parser/chunker logic is covered by unit tests with fixtures.
@@ -174,13 +196,16 @@ be built with no AI and no new data source.
 - [ ] Persist attempts; update readiness score
 - [ ] Unit tests for SRS interval logic
 
-### Step 5 · Code practice ⬜
-- [ ] Code editor (CodeMirror, Python / JS)
-- [ ] Pyodide Web Worker with timeout
-- [ ] JS sandbox Web Worker with timeout
-- [ ] Test-runner UI (pass / fail per case)
-- [ ] Saved attempts panel
-- [ ] Hint button
+### Step 5 · Code practice ✅ (free-form scratchpad, per user direction)
+- [x] CodeMirror editor (dark, oneDark) with Python / JavaScript language switch
+- [x] Run executes code in a Web Worker and shows captured output + errors
+- [x] Python via Pyodide (loaded from CDN only on first run); JS in its own worker
+- [x] Timeout kills runaway code (infinite loops) by terminating the worker
+- [x] Editable Question / notes panel saved per file; code autosaves
+- [x] Save/restore timestamped snapshots
+- [x] Unit tests for the JS run harness (output + error capture)
+- Note: original pass/fail problem pack was replaced with a free-form scratchpad
+  (editable notes + run-output) at the user's request; no problem generation.
 
 ### Step 6 · AI agent ⬜
 - [ ] Provider interface `generate({ prompt, schema })`

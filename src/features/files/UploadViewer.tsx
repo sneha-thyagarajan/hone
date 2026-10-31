@@ -1,8 +1,9 @@
 import { useMemo } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { ArrowLeft, Trash2, AlertTriangle, FileText } from 'lucide-react'
+import { ArrowLeft, Trash2, AlertTriangle, FileText, ExternalLink } from 'lucide-react'
 import { useFile } from '@/features/files/useFiles'
 import { useChunks } from '@/features/files/useChunks'
+import { useBlobUrl } from '@/features/files/useBlobUrl'
 import { deleteFile } from '@/features/files/fileActions'
 import type { Chunk } from '@/db/types'
 
@@ -11,10 +12,13 @@ export default function UploadViewer() {
   const navigate = useNavigate()
   const file = useFile(fileId ? Number(fileId) : undefined)
   const chunks = useChunks(fileId ? Number(fileId) : undefined)
+  const blobUrl = useBlobUrl(file?.blobId)
 
   const pages = useMemo(() => groupByPage(chunks), [chunks])
   const parseError = file?.meta?.parseError as string | undefined
-  const isDocx = file?.meta?.ext === 'docx'
+  const ext = (file?.meta?.ext as string) ?? 'file'
+  const isPdf = ext === 'pdf'
+  const isDocx = ext === 'docx'
 
   async function handleDelete() {
     if (!file) return
@@ -26,6 +30,8 @@ export default function UploadViewer() {
   if (!file) {
     return <div className="flex flex-1 items-center justify-center text-muted">File not found.</div>
   }
+
+  const hasText = pages.length > 0
 
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col px-8 py-6">
@@ -42,9 +48,21 @@ export default function UploadViewer() {
           <FileText size={18} className="text-accent" />
           <h1 className="font-serif text-xl font-semibold text-heading">{file.name}</h1>
           <span className="rounded-full bg-accent-tint px-2 py-0.5 text-[11px] font-semibold uppercase text-accent">
-            {String(file.meta?.ext ?? 'file')}
+            {ext}
           </span>
         </div>
+        {blobUrl && (
+          <a
+            href={blobUrl}
+            target="_blank"
+            rel="noreferrer"
+            download={file.name}
+            className="flex min-h-[36px] items-center gap-1.5 rounded-btn border border-line bg-surface px-3 text-sm font-medium text-ink shadow-xs transition-colors hover:bg-surface-2"
+          >
+            <ExternalLink size={14} />
+            Open original
+          </a>
+        )}
         <button
           onClick={handleDelete}
           className="flex min-h-[36px] items-center gap-1.5 rounded-btn px-3 text-sm font-medium text-danger-text transition-colors hover:bg-danger-tint"
@@ -54,34 +72,50 @@ export default function UploadViewer() {
         </button>
       </div>
 
-      {/* Body */}
+      {/* Original document (PDFs render natively) */}
+      {isPdf && blobUrl && (
+        <iframe
+          title={file.name}
+          src={blobUrl}
+          className="mb-5 h-[75vh] w-full rounded-card border border-line bg-surface shadow-card"
+        />
+      )}
+
+      {/* Extracted text */}
       {parseError ? (
-        <div className="flex flex-col items-center gap-3 rounded-card border border-line bg-surface py-16 text-center shadow-card">
-          <AlertTriangle size={28} className="text-danger-text" />
+        <div className="flex flex-col items-center gap-3 rounded-card border border-line bg-surface py-12 text-center shadow-card">
+          <AlertTriangle size={26} className="text-danger-text" />
           <div>
             <p className="font-medium text-ink">We couldn't extract text from this file.</p>
             <p className="mt-1 text-sm text-muted">
-              The original is still saved, but there's nothing to preview.
+              {blobUrl ? 'Use “Open original” to view it.' : 'The original is still saved.'}
             </p>
           </div>
         </div>
-      ) : pages.length === 0 ? (
-        <div className="flex flex-col items-center gap-2 rounded-card border border-line bg-surface py-16 text-center text-muted shadow-card">
-          <p className="text-sm">No text was found in this file.</p>
-        </div>
-      ) : (
+      ) : hasText ? (
         <div className="flex flex-col gap-4">
+          {isPdf && (
+            <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted">
+              Extracted text
+            </p>
+          )}
           {pages.map(({ page, text }) => (
-            <section
-              key={page}
-              className="rounded-card border border-line bg-surface p-5 shadow-card"
-            >
+            <section key={page} className="rounded-card border border-line bg-surface p-5 shadow-card">
               <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted">
                 {isDocx ? 'Document' : `Page ${page}`}
               </p>
               <p className="whitespace-pre-wrap text-[15px] leading-7 text-ink">{text}</p>
             </section>
           ))}
+        </div>
+      ) : (
+        <div className="flex flex-col items-center gap-2 rounded-card border border-line bg-surface py-12 text-center text-muted shadow-card">
+          <p className="text-sm">
+            {isPdf
+              ? 'No selectable text layer (this looks like a scanned PDF). The document is shown above.'
+              : 'No text was found in this file.'}
+          </p>
+          {!isPdf && blobUrl && <p className="text-xs">Use “Open original” to view it.</p>}
         </div>
       )}
     </div>

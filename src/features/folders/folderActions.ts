@@ -23,6 +23,11 @@ export async function updateFolderExamDate(id: number, examDate: string | undefi
   await db.folders.update(id, { examDate })
 }
 
+/** Change a folder's kind. Never touches existing files. */
+export async function updateFolderKind(id: number, kind: FolderKind): Promise<void> {
+  await db.folders.update(id, { kind })
+}
+
 /** Deletes a folder and all its files (plus their chunks and attempts). */
 export async function deleteFolder(id: number): Promise<void> {
   await db.transaction('rw', db.folders, db.files, db.chunks, db.attempts, async () => {

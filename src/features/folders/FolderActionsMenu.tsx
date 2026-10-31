@@ -1,10 +1,11 @@
 import { useState } from 'react'
-import { MoreHorizontal, Pencil, CalendarClock, Trash2 } from 'lucide-react'
+import { MoreHorizontal, Pencil, CalendarClock, Trash2, Shuffle } from 'lucide-react'
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 import { cn } from '@/lib/utils'
 import type { Folder } from '@/db/types'
 import { RenameFolderDialog } from './RenameFolderDialog'
 import { EditExamDateDialog } from './EditExamDateDialog'
+import { ChangeFolderTypeDialog } from './ChangeFolderTypeDialog'
 import { DeleteFolderAlert } from './DeleteFolderAlert'
 
 type Variant = 'sidebar' | 'page'
@@ -14,9 +15,9 @@ interface Props {
   variant?: Variant
 }
 
-/** A self-contained "..." menu with Rename / Edit exam date / Delete and their dialogs. */
+/** A self-contained "..." menu with folder actions and their dialogs. */
 export function FolderActionsMenu({ folder, variant = 'page' }: Props) {
-  const [dialog, setDialog] = useState<null | 'rename' | 'exam' | 'delete'>(null)
+  const [dialog, setDialog] = useState<null | 'rename' | 'exam' | 'type' | 'delete'>(null)
 
   const trigger =
     variant === 'sidebar'
@@ -55,6 +56,13 @@ export function FolderActionsMenu({ folder, variant = 'page' }: Props) {
               <CalendarClock size={14} className="text-muted" />
               Edit exam date
             </DropdownMenu.Item>
+            <DropdownMenu.Item
+              onSelect={() => setDialog('type')}
+              className="flex cursor-pointer items-center gap-2.5 px-3 py-2 text-sm text-ink outline-none hover:bg-surface-2"
+            >
+              <Shuffle size={14} className="text-muted" />
+              Change type
+            </DropdownMenu.Item>
             <DropdownMenu.Separator className="my-1 h-px bg-line" />
             <DropdownMenu.Item
               onSelect={() => setDialog('delete')}
@@ -75,6 +83,12 @@ export function FolderActionsMenu({ folder, variant = 'page' }: Props) {
       <EditExamDateDialog
         folder={folder}
         open={dialog === 'exam'}
+        onOpenChange={(v) => !v && setDialog(null)}
+      />
+      <ChangeFolderTypeDialog
+        key={`type-${folder.kind}`}
+        folder={folder}
+        open={dialog === 'type'}
         onOpenChange={(v) => !v && setDialog(null)}
       />
       <DeleteFolderAlert

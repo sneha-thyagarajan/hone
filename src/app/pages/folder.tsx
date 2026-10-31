@@ -11,6 +11,7 @@ import { NewFileMenu } from '@/features/files/NewFileMenu'
 import { FolderActionsMenu } from '@/features/folders/FolderActionsMenu'
 import { useUploadStore } from '@/features/files/upload/uploadStore'
 import { FILE_TYPE_META, FILTER_TABS, type FilterTab } from '@/features/files/fileMeta'
+import { getAllowedTools } from '@/features/folders/tools'
 import { ProgressBar } from '@/components/ui/ProgressBar'
 import type { HoneFile } from '@/db/types'
 
@@ -164,7 +165,7 @@ export default function FolderWorkspacePage() {
         </div>
         <div className="flex items-center gap-2">
           <FolderActionsMenu folder={folder} variant="page" />
-          <NewFileMenu folderId={folder.id!} />
+          <NewFileMenu folderId={folder.id!} kind={folder.kind} />
         </div>
       </div>
 
@@ -193,7 +194,12 @@ export default function FolderWorkspacePage() {
 
       {/* Filter tabs */}
       <div className="mb-4 flex flex-wrap gap-2">
-        {FILTER_TABS.map((tab) => {
+        {FILTER_TABS.filter((tab) => {
+          const tools = getAllowedTools(folder.kind)
+          if (tab.key === 'practice') return tools.practiceTab
+          if (tab.key === 'notes') return tools.notesTab
+          return true
+        }).map((tab) => {
           const count =
             tab.key === 'all'
               ? allFiles.length
