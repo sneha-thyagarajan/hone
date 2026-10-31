@@ -9,7 +9,10 @@ import { search, searchKeymap, openSearchPanel } from '@codemirror/search'
 import type { EditResult, EditState } from './markdownCommands'
 
 interface UseMarkdownEditorOptions {
-  initialValue: string
+  /** Current value; read when the editor is (re)created, not on every keystroke. */
+  value: string
+  /** Bump to recreate the editor with `value` (e.g. when switching note pages). */
+  resetKey: number
   onChange: (value: string) => void
   placeholder?: string
   /** Called on editor scroll with the 1-based line at the top of the viewport. */
@@ -18,7 +21,8 @@ interface UseMarkdownEditorOptions {
 
 /** Returns a container ref plus editor controls (formatting, scroll, search). */
 export function useMarkdownEditor({
-  initialValue,
+  value,
+  resetKey,
   onChange,
   placeholder,
   onScrollLine,
@@ -27,9 +31,11 @@ export function useMarkdownEditor({
   const viewRef = useRef<EditorView | null>(null)
   const onChangeRef = useRef(onChange)
   const onScrollLineRef = useRef(onScrollLine)
+  const valueRef = useRef(value)
   useLayoutEffect(() => {
     onChangeRef.current = onChange
     onScrollLineRef.current = onScrollLine
+    valueRef.current = value
   })
 
   const applyEdit = useCallback((transform: (s: EditState) => EditResult) => {
@@ -101,7 +107,7 @@ export function useMarkdownEditor({
     })
 
     const state = EditorState.create({
-      doc: initialValue,
+      doc: valueRef.current,
       extensions: [
         history(),
         search({ top: true }),
@@ -125,7 +131,7 @@ export function useMarkdownEditor({
       viewRef.current = null
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [resetKey])
 
   return { containerRef, applyEdit, scrollToLine, openFind, getScrollDOM }
 }

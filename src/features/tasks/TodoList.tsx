@@ -52,13 +52,16 @@ export function TodoList({ date, emptyText = 'Nothing planned.' }: Props) {
         </div>
       ))}
 
-      <form onSubmit={add} className="mt-1 flex items-center gap-2 px-1">
+      <form
+        onSubmit={add}
+        className="mt-1.5 flex items-center gap-2 rounded-btn border border-line bg-surface-2/60 px-3 py-2 transition-colors focus-within:border-accent focus-within:bg-surface focus-within:ring-2 focus-within:ring-accent/20"
+      >
         <Plus size={14} className="flex-shrink-0 text-muted" />
         <input
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder="Add a task…"
-          className="flex-1 bg-transparent py-1 text-sm text-ink outline-none placeholder:text-muted"
+          className="flex-1 bg-transparent text-sm text-ink outline-none placeholder:text-muted"
         />
       </form>
     </div>

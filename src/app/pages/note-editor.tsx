@@ -16,9 +16,13 @@ import {
   ListTree,
   Search,
   WrapText,
+  ChevronLeft,
+  ChevronRight,
+  Plus,
   X,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { db } from '@/db'
 import { useFile } from '@/features/files/useFiles'
 import { useFolder } from '@/features/folders/useFolders'
 import { deleteFile, renameFile } from '@/features/files/fileActions'
@@ -154,7 +158,7 @@ function OutlinePanel({
       </div>
       <nav className="min-h-0 flex-1 overflow-auto p-2">
         {outline.length === 0 ? (
-          <p className="px-2 py-2 text-xs text-muted">No headings yet. Start a line with #.</p>
+          <p className="px-2 py-2 text-xs text-muted">No headings on this page. Start a line with #.</p>
         ) : (
           outline.map((h, i) => (
             <button
@@ -177,11 +181,22 @@ function OutlinePanel({
   )
 }
 
+function initialPages(file: HoneFile): string[] {
+  const p = file.meta?.pages
+  if (Array.isArray(p) && p.length) return p as string[]
+  return [file.content ?? '']
+}
+
 function NoteEditorBody({ file, folderId }: { file: HoneFile; folderId?: string }) {
   const navigate = useNavigate()
   const folder = useFolder(file.folderId)
   const { save, status } = useAutosave(file.id)
-  const [text, setText] = useState(file.content ?? '')
+
+  const [pages, setPages] = useState<string[]>(() => initialPages(file))
+  const [pageIdx, setPageIdx] = useState(() => {
+    const a = file.meta?.activePage
+    return typeof a === 'number' && a >= 0 && a < pages.length ? a : 0
+  })
   const [view, setView] = useState<ViewMode>('split')
   const [showOutline, setShowOutline] = useState(false)
   const [activeIndex, setActiveIndex] = useState(-1)
@@ -190,22 +205,67 @@ function NoteEditorBody({ file, folderId }: { file: HoneFile; folderId?: string 
   const previewRef = useRef<HTMLDivElement>(null)
   const headingsRef = useRef<HTMLElement[]>([])
   const scrollLock = useRef<'editor' | 'preview' | null>(null)
+  const metaTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  const outline = useMemo(() => extractOutline(text), [text])
-  const debouncedText = useDebounced(text, 200)
-  const words = countWords(text)
+  const idx = Math.min(pageIdx, pages.length - 1) // clamp defensively
+  const current = pages[idx] ?? ''
+  const outline = useMemo(() => extractOutline(current), [current])
+  const debouncedCurrent = useDebounced(current, 200)
+  const words = countWords(current)
+
+  function persistMeta(nextPages: string[], nextActive: number) {
+    if (metaTimer.current) clearTimeout(metaTimer.current)
+    metaTimer.current = setTimeout(() => {
+      db.files.update(file.id!, {
+        meta: { ...(file.meta ?? {}), pages: nextPages, activePage: nextActive },
+      })
+    }, 400)
+  }
 
   const { containerRef, applyEdit, scrollToLine, openFind, getScrollDOM } = useMarkdownEditor({
-    initialValue: file.content ?? '',
+    value: current,
+    resetKey: idx,
     placeholder: 'Start writing in Markdown…',
     onChange: (v) => {
-      setText(v)
-      save(v)
+      const next = [...pages]
+      next[idx] = v
+      setPages(next)
+      save(next.join('\n\n'))
+      persistMeta(next, idx)
     },
     onScrollLine: (topLine) => {
       if (view !== 'preview') setActiveIndex(activeOutlineIndex(outline, topLine - 1))
     },
   })
+
+  function goToPage(i: number) {
+    const clamped = Math.max(0, Math.min(i, pages.length - 1))
+    setPageIdx(clamped)
+    setActiveIndex(-1)
+    persistMeta(pages, clamped)
+  }
+
+  function addPage() {
+    const next = [...pages, '']
+    const i = next.length - 1
+    setPages(next)
+    setPageIdx(i)
+    setActiveIndex(-1)
+    save(next.join('\n\n'))
+    persistMeta(next, i)
+  }
+
+  function deletePage() {
+    if (pages.length <= 1) return
+    if (!window.confirm(`Delete page ${idx + 1}? This can't be undone.`)) return
+    const next = pages.filter((_, i) => i !== idx)
+    const i = Math.max(0, idx - 1)
+    setPages(next)
+    setPageIdx(i)
+    setActiveIndex(-1)
+    save(next.join('\n\n'))
+    persistMeta(next, i)
+  }
 
   // Tag preview headings after each (debounced) render so the outline can scroll to them.
   useEffect(() => {
@@ -214,9 +274,9 @@ function NoteEditorBody({ file, folderId }: { file: HoneFile; folderId?: string 
     const hs = Array.from(el.querySelectorAll('h1,h2,h3,h4,h5,h6')) as HTMLElement[]
     hs.forEach((h, i) => (h.id = `outline-${i}`))
     headingsRef.current = hs
-  }, [debouncedText, view])
+  }, [debouncedCurrent, view, idx])
 
-  // Keep editor scroll synced to preview in Split mode.
+  // Sync editor <-> preview scroll in Split mode.
   useEffect(() => {
     const el = getScrollDOM()
     if (!el || view !== 'split') return
@@ -236,18 +296,17 @@ function NoteEditorBody({ file, folderId }: { file: HoneFile; folderId?: string 
     }
     el.addEventListener('scroll', handler, { passive: true })
     return () => el.removeEventListener('scroll', handler)
-  }, [getScrollDOM, view])
+  }, [getScrollDOM, view, idx])
 
   function onPreviewScroll() {
     const pv = previewRef.current
     if (!pv) return
-    // Active section from preview headings when preview drives.
     if (view === 'preview') {
-      let idx = -1
-      headingsRef.current.forEach((h, i) => {
-        if (h.offsetTop - pv.scrollTop <= 4) idx = i
+      let i = -1
+      headingsRef.current.forEach((h, n) => {
+        if (h.offsetTop - pv.scrollTop <= 4) i = n
       })
-      setActiveIndex(idx)
+      setActiveIndex(i)
     }
     if (view !== 'split' || scrollLock.current === 'editor') return
     const el = getScrollDOM()
@@ -354,24 +413,76 @@ function NoteEditorBody({ file, folderId }: { file: HoneFile; folderId?: string 
         </button>
       </div>
 
-      {/* Secondary toolbar (sticky): formatting + preview options */}
-      <div className="flex flex-shrink-0 items-center justify-between border-b border-line bg-surface/40 px-5 py-1.5">
-        <div className={cn('flex items-center gap-0.5', !showEditor && 'invisible')}>
-          <FmtButton label="Bold" onClick={() => applyEdit((s: EditState) => toggleWrap(s, '**'))}>
-            <Bold size={15} />
-          </FmtButton>
-          <FmtButton label="Italic" onClick={() => applyEdit((s: EditState) => toggleWrap(s, '*'))}>
-            <Italic size={15} />
-          </FmtButton>
-          <FmtButton label="Heading" onClick={() => applyEdit((s) => toggleHeading(s, 2))}>
-            <Heading2 size={15} />
-          </FmtButton>
-          <FmtButton label="Bullet list" onClick={() => applyEdit(toggleList)}>
-            <List size={15} />
-          </FmtButton>
-          <FmtButton label="Inline code" onClick={() => applyEdit((s: EditState) => toggleWrap(s, '`'))}>
-            <Code2 size={15} />
-          </FmtButton>
+      {/* Secondary toolbar (sticky): pages, formatting, preview options */}
+      <div className="flex flex-shrink-0 items-center justify-between gap-3 border-b border-line bg-surface/40 px-5 py-1.5">
+        <div className="flex items-center gap-2">
+          {/* Page controls */}
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => goToPage(idx - 1)}
+              disabled={idx === 0}
+              aria-label="Previous page"
+              className="flex h-7 w-7 items-center justify-center rounded-md text-muted transition-colors hover:bg-surface-2 hover:text-ink disabled:opacity-40"
+            >
+              <ChevronLeft size={16} />
+            </button>
+            <span className="whitespace-nowrap px-1 text-xs font-medium text-ink">
+              Page {idx + 1} / {pages.length}
+            </span>
+            <button
+              onClick={() => goToPage(idx + 1)}
+              disabled={idx >= pages.length - 1}
+              aria-label="Next page"
+              className="flex h-7 w-7 items-center justify-center rounded-md text-muted transition-colors hover:bg-surface-2 hover:text-ink disabled:opacity-40"
+            >
+              <ChevronRight size={16} />
+            </button>
+            <button
+              onClick={addPage}
+              title="Add page"
+              aria-label="Add page"
+              className="flex h-7 items-center gap-1 rounded-md px-2 text-xs font-medium text-muted transition-colors hover:bg-surface-2 hover:text-ink"
+            >
+              <Plus size={14} />
+              Add page
+            </button>
+            {pages.length > 1 && (
+              <button
+                onClick={deletePage}
+                title="Delete this page"
+                aria-label="Delete page"
+                className="flex h-7 w-7 items-center justify-center rounded-md text-muted transition-colors hover:bg-danger-tint hover:text-danger-text"
+              >
+                <Trash2 size={13} />
+              </button>
+            )}
+          </div>
+
+          {showEditor && (
+            <>
+              <span className="h-5 w-px bg-line" />
+              <div className="flex items-center gap-0.5">
+                <FmtButton label="Bold" onClick={() => applyEdit((s: EditState) => toggleWrap(s, '**'))}>
+                  <Bold size={15} />
+                </FmtButton>
+                <FmtButton label="Italic" onClick={() => applyEdit((s: EditState) => toggleWrap(s, '*'))}>
+                  <Italic size={15} />
+                </FmtButton>
+                <FmtButton label="Heading" onClick={() => applyEdit((s) => toggleHeading(s, 2))}>
+                  <Heading2 size={15} />
+                </FmtButton>
+                <FmtButton label="Bullet list" onClick={() => applyEdit(toggleList)}>
+                  <List size={15} />
+                </FmtButton>
+                <FmtButton
+                  label="Inline code"
+                  onClick={() => applyEdit((s: EditState) => toggleWrap(s, '`'))}
+                >
+                  <Code2 size={15} />
+                </FmtButton>
+              </div>
+            </>
+          )}
         </div>
 
         {showPreview && (
@@ -379,10 +490,8 @@ function NoteEditorBody({ file, folderId }: { file: HoneFile; folderId?: string 
             onClick={() => setKeepLineBreaks(!keepLineBreaks)}
             aria-pressed={keepLineBreaks}
             className={cn(
-              'flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium transition-colors',
-              keepLineBreaks
-                ? 'bg-accent-tint text-accent'
-                : 'text-muted hover:bg-surface-2 hover:text-ink',
+              'flex flex-shrink-0 items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium transition-colors',
+              keepLineBreaks ? 'bg-accent-tint text-accent' : 'text-muted hover:bg-surface-2 hover:text-ink',
             )}
             title="Render single newlines as line breaks in the preview"
           >
@@ -403,7 +512,7 @@ function NoteEditorBody({ file, folderId }: { file: HoneFile; folderId?: string 
           />
         )}
 
-        {/* Editor pane (kept mounted so CodeMirror persists) */}
+        {/* Editor pane */}
         <div
           ref={containerRef}
           className={cn(
@@ -421,19 +530,17 @@ function NoteEditorBody({ file, folderId }: { file: HoneFile; folderId?: string 
             view === 'preview' ? 'flex-1' : view === 'split' ? 'w-1/2' : 'hidden',
           )}
         >
-          {debouncedText.trim() ? (
+          {debouncedCurrent.trim() ? (
             <div className="markdown-body mx-auto max-w-3xl">
               <ReactMarkdown
                 remarkPlugins={keepLineBreaks ? [remarkBreaks] : []}
                 rehypePlugins={[rehypeSanitize]}
               >
-                {debouncedText}
+                {debouncedCurrent}
               </ReactMarkdown>
             </div>
           ) : (
-            <p className="text-sm italic text-muted">
-              Nothing to preview yet. Start writing on the left.
-            </p>
+            <p className="text-sm italic text-muted">This page is empty. Start writing on the left.</p>
           )}
         </div>
       </div>
