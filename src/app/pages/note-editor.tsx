@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import ReactMarkdown from 'react-markdown'
 import rehypeSanitize from 'rehype-sanitize'
+import remarkBreaks from 'remark-breaks'
 import {
   Trash2,
   Check,
@@ -12,6 +13,10 @@ import {
   Heading2,
   List,
   Code2,
+  ListTree,
+  Search,
+  WrapText,
+  X,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useFile } from '@/features/files/useFiles'
@@ -26,7 +31,17 @@ import {
   toggleWrap,
   type EditState,
 } from '@/features/notes/markdownCommands'
+import {
+  activeOutlineIndex,
+  extractOutline,
+  proportionalScrollTop,
+  type OutlineItem,
+} from '@/features/notes/outline'
+import { useSetting } from '@/lib/settings'
+import { useDebounced } from '@/lib/useDebounced'
 import type { HoneFile } from '@/db/types'
+
+type ViewMode = 'edit' | 'split' | 'preview'
 
 function SaveStatusBadge({ status }: { status: 'idle' | 'saving' | 'saved' }) {
   if (status === 'idle') return <span className="text-xs text-muted">Autosaves</span>
@@ -81,7 +96,7 @@ function InlineRename({ name, fileId }: { name: string; fileId: number }) {
   return (
     <button
       onClick={() => setEditing(true)}
-      className="rounded-md px-1.5 py-0.5 font-serif text-xl font-semibold text-heading transition-colors hover:bg-surface-2"
+      className="truncate rounded-md px-1.5 py-0.5 font-serif text-xl font-semibold text-heading transition-colors hover:bg-surface-2"
       title="Click to rename"
     >
       {name}
@@ -112,21 +127,149 @@ function FmtButton({
   )
 }
 
+function OutlinePanel({
+  outline,
+  activeIndex,
+  onPick,
+  onClose,
+}: {
+  outline: OutlineItem[]
+  activeIndex: number
+  onPick: (index: number) => void
+  onClose: () => void
+}) {
+  return (
+    <div className="flex w-56 flex-shrink-0 flex-col border-r border-line bg-surface">
+      <div className="flex flex-shrink-0 items-center justify-between border-b border-line px-3 py-2">
+        <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted">
+          Outline
+        </span>
+        <button
+          onClick={onClose}
+          aria-label="Hide outline"
+          className="rounded p-0.5 text-muted hover:bg-surface-2 hover:text-ink"
+        >
+          <X size={13} />
+        </button>
+      </div>
+      <nav className="min-h-0 flex-1 overflow-auto p-2">
+        {outline.length === 0 ? (
+          <p className="px-2 py-2 text-xs text-muted">No headings yet. Start a line with #.</p>
+        ) : (
+          outline.map((h, i) => (
+            <button
+              key={`${h.line}-${i}`}
+              onClick={() => onPick(i)}
+              style={{ paddingLeft: (h.level - 1) * 12 + 8 }}
+              className={cn(
+                'block w-full truncate rounded px-2 py-1 text-left text-xs transition-colors',
+                i === activeIndex
+                  ? 'bg-accent-tint font-medium text-accent'
+                  : 'text-muted hover:bg-surface-2 hover:text-ink',
+              )}
+            >
+              {h.text}
+            </button>
+          ))
+        )}
+      </nav>
+    </div>
+  )
+}
+
 function NoteEditorBody({ file, folderId }: { file: HoneFile; folderId?: string }) {
   const navigate = useNavigate()
   const folder = useFolder(file.folderId)
   const { save, status } = useAutosave(file.id)
   const [text, setText] = useState(file.content ?? '')
-  const [view, setView] = useState<'split' | 'edit' | 'preview'>('split')
+  const [view, setView] = useState<ViewMode>('split')
+  const [showOutline, setShowOutline] = useState(false)
+  const [activeIndex, setActiveIndex] = useState(-1)
+  const [keepLineBreaks, setKeepLineBreaks] = useSetting('note.keepLineBreaks', true)
 
-  const { containerRef, applyEdit } = useMarkdownEditor({
+  const previewRef = useRef<HTMLDivElement>(null)
+  const headingsRef = useRef<HTMLElement[]>([])
+  const scrollLock = useRef<'editor' | 'preview' | null>(null)
+
+  const outline = useMemo(() => extractOutline(text), [text])
+  const debouncedText = useDebounced(text, 200)
+  const words = countWords(text)
+
+  const { containerRef, applyEdit, scrollToLine, openFind, getScrollDOM } = useMarkdownEditor({
     initialValue: file.content ?? '',
     placeholder: 'Start writing in Markdown…',
     onChange: (v) => {
       setText(v)
       save(v)
     },
+    onScrollLine: (topLine) => {
+      if (view !== 'preview') setActiveIndex(activeOutlineIndex(outline, topLine - 1))
+    },
   })
+
+  // Tag preview headings after each (debounced) render so the outline can scroll to them.
+  useEffect(() => {
+    const el = previewRef.current
+    if (!el) return
+    const hs = Array.from(el.querySelectorAll('h1,h2,h3,h4,h5,h6')) as HTMLElement[]
+    hs.forEach((h, i) => (h.id = `outline-${i}`))
+    headingsRef.current = hs
+  }, [debouncedText, view])
+
+  // Keep editor scroll synced to preview in Split mode.
+  useEffect(() => {
+    const el = getScrollDOM()
+    if (!el || view !== 'split') return
+    const handler = () => {
+      if (scrollLock.current === 'preview') return
+      const pv = previewRef.current
+      if (!pv) return
+      scrollLock.current = 'editor'
+      pv.scrollTop = proportionalScrollTop({
+        sourceScrollTop: el.scrollTop,
+        sourceScrollHeight: el.scrollHeight,
+        sourceClientHeight: el.clientHeight,
+        targetScrollHeight: pv.scrollHeight,
+        targetClientHeight: pv.clientHeight,
+      })
+      requestAnimationFrame(() => (scrollLock.current = null))
+    }
+    el.addEventListener('scroll', handler, { passive: true })
+    return () => el.removeEventListener('scroll', handler)
+  }, [getScrollDOM, view])
+
+  function onPreviewScroll() {
+    const pv = previewRef.current
+    if (!pv) return
+    // Active section from preview headings when preview drives.
+    if (view === 'preview') {
+      let idx = -1
+      headingsRef.current.forEach((h, i) => {
+        if (h.offsetTop - pv.scrollTop <= 4) idx = i
+      })
+      setActiveIndex(idx)
+    }
+    if (view !== 'split' || scrollLock.current === 'editor') return
+    const el = getScrollDOM()
+    if (!el) return
+    scrollLock.current = 'preview'
+    el.scrollTop = proportionalScrollTop({
+      sourceScrollTop: pv.scrollTop,
+      sourceScrollHeight: pv.scrollHeight,
+      sourceClientHeight: pv.clientHeight,
+      targetScrollHeight: el.scrollHeight,
+      targetClientHeight: el.clientHeight,
+    })
+    requestAnimationFrame(() => (scrollLock.current = null))
+  }
+
+  function pickHeading(i: number) {
+    setActiveIndex(i)
+    scrollToLine(outline[i].line + 1)
+    const pv = previewRef.current
+    const h = headingsRef.current[i]
+    if (pv && h) pv.scrollTop = h.offsetTop
+  }
 
   async function handleDelete() {
     if (!window.confirm(`Delete "${file.name}"? This cannot be undone.`)) return
@@ -136,12 +279,11 @@ function NoteEditorBody({ file, folderId }: { file: HoneFile; folderId?: string 
 
   const showEditor = view !== 'preview'
   const showPreview = view !== 'edit'
-  const words = countWords(text)
 
   return (
-    <div className="flex flex-1 flex-col overflow-hidden">
-      {/* Top toolbar */}
-      <div className="flex min-h-[64px] items-center gap-3 border-b border-line bg-surface/70 px-6 backdrop-blur">
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+      {/* Toolbar (fixed) */}
+      <div className="flex min-h-[60px] flex-shrink-0 items-center gap-3 border-b border-line bg-surface/70 px-6 backdrop-blur">
         <button
           onClick={() => navigate(`/folders/${folderId}`)}
           className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-btn text-muted transition-colors hover:bg-surface-2 hover:text-ink"
@@ -160,11 +302,35 @@ function NoteEditorBody({ file, folderId }: { file: HoneFile; folderId?: string 
           <div className="flex items-center gap-2.5">
             <InlineRename name={file.name} fileId={file.id!} />
             <SaveStatusBadge status={status} />
-            <span className="text-xs text-muted">· {words} {words === 1 ? 'word' : 'words'}</span>
+            <span className="whitespace-nowrap text-xs text-muted">
+              · {words} {words === 1 ? 'word' : 'words'}
+            </span>
           </div>
         </div>
 
-        <div className="flex rounded-btn border border-line bg-surface p-0.5 text-xs font-medium">
+        <button
+          onClick={() => setShowOutline((v) => !v)}
+          title="Outline"
+          aria-label="Toggle outline"
+          aria-pressed={showOutline}
+          className={cn(
+            'flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-btn transition-colors',
+            showOutline ? 'bg-accent-tint text-accent' : 'text-muted hover:bg-surface-2 hover:text-ink',
+          )}
+        >
+          <ListTree size={16} />
+        </button>
+
+        <button
+          onClick={openFind}
+          title="Find in note (Ctrl/Cmd+F)"
+          aria-label="Find in note"
+          className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-btn text-muted transition-colors hover:bg-surface-2 hover:text-ink"
+        >
+          <Search size={15} />
+        </button>
+
+        <div className="flex flex-shrink-0 rounded-btn border border-line bg-surface p-0.5 text-xs font-medium">
           {(['edit', 'split', 'preview'] as const).map((v) => (
             <button
               key={v}
@@ -181,16 +347,16 @@ function NoteEditorBody({ file, folderId }: { file: HoneFile; folderId?: string 
 
         <button
           onClick={handleDelete}
-          className="flex min-h-[36px] items-center gap-1.5 rounded-btn px-3 text-sm font-medium text-danger-text transition-colors hover:bg-danger-tint"
+          className="flex min-h-[36px] flex-shrink-0 items-center gap-1.5 rounded-btn px-3 text-sm font-medium text-danger-text transition-colors hover:bg-danger-tint"
         >
           <Trash2 size={14} />
           Delete
         </button>
       </div>
 
-      {/* Formatting toolbar */}
-      {showEditor && (
-        <div className="flex items-center gap-0.5 border-b border-line bg-surface/40 px-5 py-1.5">
+      {/* Secondary toolbar (sticky): formatting + preview options */}
+      <div className="flex flex-shrink-0 items-center justify-between border-b border-line bg-surface/40 px-5 py-1.5">
+        <div className={cn('flex items-center gap-0.5', !showEditor && 'invisible')}>
           <FmtButton label="Bold" onClick={() => applyEdit((s: EditState) => toggleWrap(s, '**'))}>
             <Bold size={15} />
           </FmtButton>
@@ -207,38 +373,69 @@ function NoteEditorBody({ file, folderId }: { file: HoneFile; folderId?: string 
             <Code2 size={15} />
           </FmtButton>
         </div>
-      )}
 
-      {/* Editor + Preview */}
-      <div className="flex flex-1 overflow-hidden">
-        {showEditor && (
-          <div
-            ref={containerRef}
+        {showPreview && (
+          <button
+            onClick={() => setKeepLineBreaks(!keepLineBreaks)}
+            aria-pressed={keepLineBreaks}
             className={cn(
-              'h-full overflow-auto bg-surface',
-              showPreview ? 'w-1/2 border-r border-line' : 'w-full',
+              'flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium transition-colors',
+              keepLineBreaks
+                ? 'bg-accent-tint text-accent'
+                : 'text-muted hover:bg-surface-2 hover:text-ink',
             )}
+            title="Render single newlines as line breaks in the preview"
+          >
+            <WrapText size={13} />
+            Keep line breaks
+          </button>
+        )}
+      </div>
+
+      {/* Panes */}
+      <div className="flex min-h-0 flex-1 overflow-hidden">
+        {showOutline && (
+          <OutlinePanel
+            outline={outline}
+            activeIndex={activeIndex}
+            onPick={pickHeading}
+            onClose={() => setShowOutline(false)}
           />
         )}
 
-        {showPreview && (
-          <div
-            className={cn(
-              'h-full overflow-auto bg-bg px-8 py-6',
-              showEditor ? 'w-1/2' : 'mx-auto w-full max-w-3xl',
-            )}
-          >
-            {text.trim() ? (
-              <div className="markdown-body">
-                <ReactMarkdown rehypePlugins={[rehypeSanitize]}>{text}</ReactMarkdown>
-              </div>
-            ) : (
-              <p className="text-sm italic text-muted">
-                Nothing to preview yet. Start writing on the left.
-              </p>
-            )}
-          </div>
-        )}
+        {/* Editor pane (kept mounted so CodeMirror persists) */}
+        <div
+          ref={containerRef}
+          className={cn(
+            'h-full overflow-hidden bg-surface',
+            view === 'edit' ? 'flex-1' : view === 'split' ? 'w-1/2 border-r border-line' : 'hidden',
+          )}
+        />
+
+        {/* Preview pane */}
+        <div
+          ref={previewRef}
+          onScroll={onPreviewScroll}
+          className={cn(
+            'relative h-full overflow-auto bg-bg px-8 py-6',
+            view === 'preview' ? 'flex-1' : view === 'split' ? 'w-1/2' : 'hidden',
+          )}
+        >
+          {debouncedText.trim() ? (
+            <div className="markdown-body mx-auto max-w-3xl">
+              <ReactMarkdown
+                remarkPlugins={keepLineBreaks ? [remarkBreaks] : []}
+                rehypePlugins={[rehypeSanitize]}
+              >
+                {debouncedText}
+              </ReactMarkdown>
+            </div>
+          ) : (
+            <p className="text-sm italic text-muted">
+              Nothing to preview yet. Start writing on the left.
+            </p>
+          )}
+        </div>
       </div>
     </div>
   )
@@ -260,6 +457,5 @@ export default function NoteEditorPage() {
     )
   }
 
-  // Remount the editor when switching between notes so it re-seeds its content.
   return <NoteEditorBody key={file.id} file={file} folderId={folderId} />
 }

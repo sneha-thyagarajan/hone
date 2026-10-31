@@ -118,7 +118,7 @@ export default function FolderWorkspacePage() {
 
   return (
     <div
-      className="relative mx-auto w-full max-w-6xl flex-1 px-8 py-8"
+      className="relative flex min-h-0 flex-1 flex-col"
       onDragOver={(e) => {
         e.preventDefault()
         if (!dragging) setDragging(true)
@@ -136,127 +136,136 @@ export default function FolderWorkspacePage() {
         </div>
       )}
 
-      {/* Header */}
-      <div className="mb-6 flex items-start justify-between gap-4">
-        <div className="flex flex-col gap-2">
-          <p className="text-xs font-medium text-muted">Folders / {folder.name}</p>
-          <div className="flex flex-wrap items-center gap-2.5">
-            <h1 className="font-serif text-3xl font-semibold tracking-tight text-heading">
-              {folder.name}
-            </h1>
-            <span className="rounded-full bg-pink px-2.5 py-1 text-xs font-bold text-[#243b39]">
-              {KIND_LABEL[folder.kind]}
-            </span>
-            {days !== null && (
-              <span
-                className={cn(
-                  'rounded-full px-2.5 py-1 text-xs font-semibold',
-                  days <= 7
-                    ? 'bg-danger-tint text-danger-text'
-                    : days <= 21
-                      ? 'bg-amber-tint text-amber'
-                      : 'bg-accent-tint text-accent',
-                )}
-              >
-                {days > 0 ? `Exam · ${days} days` : days === 0 ? 'Exam today!' : 'Exam passed'}
+      {/* Header (fixed) */}
+      <div className="flex-shrink-0 px-8 pb-6 pt-8">
+        <div className="mx-auto flex max-w-6xl items-start justify-between gap-4">
+          <div className="flex flex-col gap-2">
+            <p className="text-xs font-medium text-muted">Folders / {folder.name}</p>
+            <div className="flex flex-wrap items-center gap-2.5">
+              <h1 className="font-serif text-3xl font-semibold tracking-tight text-heading">
+                {folder.name}
+              </h1>
+              <span className="rounded-full bg-pink px-2.5 py-1 text-xs font-bold text-[#243b39]">
+                {KIND_LABEL[folder.kind]}
               </span>
+              {days !== null && (
+                <span
+                  className={cn(
+                    'rounded-full px-2.5 py-1 text-xs font-semibold',
+                    days <= 7
+                      ? 'bg-danger-tint text-danger-text'
+                      : days <= 21
+                        ? 'bg-amber-tint text-amber'
+                        : 'bg-accent-tint text-accent',
+                  )}
+                >
+                  {days > 0 ? `Exam · ${days} days` : days === 0 ? 'Exam today!' : 'Exam passed'}
+                </span>
+              )}
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <FolderActionsMenu folder={folder} variant="page" />
+            <NewFileMenu folderId={folder.id!} kind={folder.kind} />
+          </div>
+        </div>
+      </div>
+
+      {/* Scrollable content */}
+      <div className="min-h-0 flex-1 overflow-auto px-8 pb-8">
+        <div className="mx-auto max-w-6xl">
+          {/* Stats */}
+          <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <StatCard label="Readiness">
+              <div className="flex items-baseline gap-2">
+                <span className="font-serif text-3xl font-semibold text-ink">{readiness}%</span>
+              </div>
+              <ProgressBar value={readiness} />
+            </StatCard>
+            <StatCard label="Files">
+              <span className="font-serif text-3xl font-semibold text-ink">{allFiles.length}</span>
+              <span className="text-xs text-muted">in this folder</span>
+            </StatCard>
+            <StatCard label="Exam">
+              <span className="font-serif text-3xl font-semibold text-ink">
+                {days !== null && days >= 0 ? days : '—'}
+                {days !== null && days >= 0 && (
+                  <span className="ml-1 text-base text-muted">days</span>
+                )}
+              </span>
+              <span className="text-xs text-muted">
+                {folder.examDate ? 'until exam' : 'no date set'}
+              </span>
+            </StatCard>
+          </div>
+
+          {/* Filter tabs */}
+          <div className="mb-4 flex flex-wrap gap-2">
+            {FILTER_TABS.filter((tab) => {
+              const tools = getAllowedTools(folder.kind)
+              if (tab.key === 'practice') return tools.practiceTab
+              if (tab.key === 'notes') return tools.notesTab
+              return true
+            }).map((tab) => {
+              const count =
+                tab.key === 'all'
+                  ? allFiles.length
+                  : allFiles.filter((f) => FILE_TYPE_META[f.type].filter === tab.key).length
+              const active = filter === tab.key
+              return (
+                <button
+                  key={tab.key}
+                  onClick={() => setFilter(tab.key)}
+                  className={cn(
+                    'flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors',
+                    active
+                      ? 'bg-accent text-on-accent'
+                      : 'border border-line bg-surface text-muted hover:text-ink',
+                  )}
+                >
+                  {tab.label}
+                  <span
+                    className={cn(
+                      'rounded-full px-1.5 text-[10px] font-semibold',
+                      active ? 'bg-black/20 text-on-accent' : 'bg-line text-muted',
+                    )}
+                  >
+                    {count}
+                  </span>
+                </button>
+              )
+            })}
+          </div>
+
+          {/* File list */}
+          <div className="overflow-hidden rounded-card border border-line bg-surface shadow-card">
+            {filteredFiles.length === 0 ? (
+              allFiles.length === 0 ? (
+                <div className="flex flex-col items-center justify-center gap-3 py-16 text-center">
+                  <Inbox size={28} className="text-muted" />
+                  <div>
+                    <p className="text-sm font-medium text-ink">This folder is empty</p>
+                    <p className="mt-1 text-xs text-muted">
+                      Upload a file, write a note, or drag files here to get started.
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center gap-3 py-16 text-center">
+                  <Filter size={26} className="text-muted" />
+                  <div>
+                    <p className="text-sm font-medium text-ink">
+                      No {FILTER_TABS.find((t) => t.key === filter)?.label.toLowerCase()} files
+                    </p>
+                    <p className="mt-1 text-xs text-muted">Try a different tab or add one.</p>
+                  </div>
+                </div>
+              )
+            ) : (
+              filteredFiles.map((f) => <FileRow key={f.id} file={f} />)
             )}
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <FolderActionsMenu folder={folder} variant="page" />
-          <NewFileMenu folderId={folder.id!} kind={folder.kind} />
-        </div>
-      </div>
-
-      {/* Stats */}
-      <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <StatCard label="Readiness">
-          <div className="flex items-baseline gap-2">
-            <span className="font-serif text-3xl font-semibold text-ink">{readiness}%</span>
-          </div>
-          <ProgressBar value={readiness} />
-        </StatCard>
-        <StatCard label="Files">
-          <span className="font-serif text-3xl font-semibold text-ink">{allFiles.length}</span>
-          <span className="text-xs text-muted">in this folder</span>
-        </StatCard>
-        <StatCard label="Exam">
-          <span className="font-serif text-3xl font-semibold text-ink">
-            {days !== null && days >= 0 ? days : '—'}
-            {days !== null && days >= 0 && <span className="ml-1 text-base text-muted">days</span>}
-          </span>
-          <span className="text-xs text-muted">
-            {folder.examDate ? 'until exam' : 'no date set'}
-          </span>
-        </StatCard>
-      </div>
-
-      {/* Filter tabs */}
-      <div className="mb-4 flex flex-wrap gap-2">
-        {FILTER_TABS.filter((tab) => {
-          const tools = getAllowedTools(folder.kind)
-          if (tab.key === 'practice') return tools.practiceTab
-          if (tab.key === 'notes') return tools.notesTab
-          return true
-        }).map((tab) => {
-          const count =
-            tab.key === 'all'
-              ? allFiles.length
-              : allFiles.filter((f) => FILE_TYPE_META[f.type].filter === tab.key).length
-          const active = filter === tab.key
-          return (
-            <button
-              key={tab.key}
-              onClick={() => setFilter(tab.key)}
-              className={cn(
-                'flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors',
-                active
-                  ? 'bg-accent text-on-accent'
-                  : 'border border-line bg-surface text-muted hover:text-ink',
-              )}
-            >
-              {tab.label}
-              <span
-                className={cn(
-                  'rounded-full px-1.5 text-[10px] font-semibold',
-                  active ? 'bg-black/20 text-on-accent' : 'bg-line text-muted',
-                )}
-              >
-                {count}
-              </span>
-            </button>
-          )
-        })}
-      </div>
-
-      {/* File list */}
-      <div className="overflow-hidden rounded-card border border-line bg-surface shadow-card">
-        {filteredFiles.length === 0 ? (
-          allFiles.length === 0 ? (
-            <div className="flex flex-col items-center justify-center gap-3 py-16 text-center">
-              <Inbox size={28} className="text-muted" />
-              <div>
-                <p className="text-sm font-medium text-ink">This folder is empty</p>
-                <p className="mt-1 text-xs text-muted">
-                  Upload a file, write a note, or drag files here to get started.
-                </p>
-              </div>
-            </div>
-          ) : (
-            <div className="flex flex-col items-center justify-center gap-3 py-16 text-center">
-              <Filter size={26} className="text-muted" />
-              <div>
-                <p className="text-sm font-medium text-ink">
-                  No {FILTER_TABS.find((t) => t.key === filter)?.label.toLowerCase()} files
-                </p>
-                <p className="mt-1 text-xs text-muted">Try a different tab or add one.</p>
-              </div>
-            </div>
-          )
-        ) : (
-          filteredFiles.map((f) => <FileRow key={f.id} file={f} />)
-        )}
       </div>
     </div>
   )

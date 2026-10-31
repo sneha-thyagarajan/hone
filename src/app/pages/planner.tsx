@@ -23,23 +23,29 @@ export default function PlannerPage() {
   const firstExamDays = upcoming.length ? daysUntil(upcoming[0].examDate) : null
 
   return (
-    <div className="mx-auto w-full max-w-6xl flex-1 px-8 py-8">
-      {/* Header */}
-      <div className="mb-6 flex items-end justify-between gap-4">
-        <div>
-          <h1 className="font-serif text-3xl font-semibold tracking-tight text-heading">Planner</h1>
-          <p className="mt-1 text-sm text-muted">
-            Today is {format(new Date(), 'd MMM')}
-            {firstExamDays !== null && ` · first exam in ${firstExamDays} days`}
-          </p>
+    <div className="flex min-h-0 flex-1 flex-col">
+      {/* Header (fixed) */}
+      <div className="flex-shrink-0 px-8 pb-6 pt-8">
+        <div className="mx-auto flex max-w-6xl items-end justify-between gap-4">
+          <div>
+            <h1 className="font-serif text-3xl font-semibold tracking-tight text-heading">
+              Planner
+            </h1>
+            <p className="mt-1 text-sm text-muted">
+              Today is {format(new Date(), 'd MMM')}
+              {firstExamDays !== null && ` · first exam in ${firstExamDays} days`}
+            </p>
+          </div>
+          <Button onClick={() => setAddOpen(true)}>
+            <Plus size={16} />
+            Add event
+          </Button>
         </div>
-        <Button onClick={() => setAddOpen(true)}>
-          <Plus size={16} />
-          Add event
-        </Button>
       </div>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+      {/* Scrollable content */}
+      <div className="min-h-0 flex-1 overflow-auto px-8 pb-8">
+        <div className="mx-auto grid max-w-6xl grid-cols-1 gap-6 lg:grid-cols-3">
         {/* Calendar */}
         <div className="lg:col-span-2">
           <div className="rounded-card border border-line bg-surface p-5 shadow-card">
@@ -78,6 +84,7 @@ export default function PlannerPage() {
           <div className="rounded-card border border-line bg-surface p-5 shadow-card">
             <DayAgenda date={selected} items={dayItems} />
           </div>
+        </div>
         </div>
       </div>
 

@@ -10,7 +10,7 @@ export function Sidebar() {
 
   return (
     <>
-      <aside className="sidebar-surface flex h-screen w-60 flex-shrink-0 flex-col border-r border-white/5">
+      <aside className="sidebar-surface flex h-full w-60 flex-shrink-0 flex-col border-r border-white/5">
         {/* Brand */}
         <div className="flex h-16 items-center gap-2.5 px-5">
           <div className="logo-mark flex h-9 w-9 items-center justify-center rounded-xl shadow-glow">

@@ -5,26 +5,33 @@ import { defaultKeymap, history, historyKeymap } from '@codemirror/commands'
 import { markdown, markdownLanguage } from '@codemirror/lang-markdown'
 import { languages } from '@codemirror/language-data'
 import { syntaxHighlighting, defaultHighlightStyle } from '@codemirror/language'
+import { search, searchKeymap, openSearchPanel } from '@codemirror/search'
 import type { EditResult, EditState } from './markdownCommands'
 
 interface UseMarkdownEditorOptions {
   initialValue: string
   onChange: (value: string) => void
   placeholder?: string
+  /** Called on editor scroll with the 1-based line at the top of the viewport. */
+  onScrollLine?: (topLine: number) => void
 }
 
-/** Returns a container ref plus `applyEdit` for the formatting toolbar. */
-export function useMarkdownEditor({ initialValue, onChange, placeholder }: UseMarkdownEditorOptions) {
+/** Returns a container ref plus editor controls (formatting, scroll, search). */
+export function useMarkdownEditor({
+  initialValue,
+  onChange,
+  placeholder,
+  onScrollLine,
+}: UseMarkdownEditorOptions) {
   const containerRef = useRef<HTMLDivElement>(null)
   const viewRef = useRef<EditorView | null>(null)
-  // Keep onChange stable in the closure
   const onChangeRef = useRef(onChange)
-  // Sync after every render without recreating the editor
+  const onScrollLineRef = useRef(onScrollLine)
   useLayoutEffect(() => {
     onChangeRef.current = onChange
+    onScrollLineRef.current = onScrollLine
   })
 
-  /** Apply a pure text transform to the current selection and refocus. */
   const applyEdit = useCallback((transform: (s: EditState) => EditResult) => {
     const view = viewRef.current
     if (!view) return
@@ -38,13 +45,34 @@ export function useMarkdownEditor({ initialValue, onChange, placeholder }: UseMa
     view.focus()
   }, [])
 
+  /** Scroll a 1-based line to the top of the editor viewport. */
+  const scrollToLine = useCallback((line: number) => {
+    const view = viewRef.current
+    if (!view) return
+    const clamped = Math.max(1, Math.min(line, view.state.doc.lines))
+    const pos = view.state.doc.line(clamped).from
+    view.dispatch({ effects: EditorView.scrollIntoView(pos, { y: 'start' }) })
+  }, [])
+
+  const openFind = useCallback(() => {
+    if (viewRef.current) openSearchPanel(viewRef.current)
+  }, [])
+
+  const getScrollDOM = useCallback(() => viewRef.current?.scrollDOM ?? null, [])
+
   useEffect(() => {
     if (!containerRef.current) return
 
     const updateListener = EditorView.updateListener.of((update) => {
-      if (update.docChanged) {
-        onChangeRef.current(update.state.doc.toString())
-      }
+      if (update.docChanged) onChangeRef.current(update.state.doc.toString())
+    })
+
+    const scrollListener = EditorView.domEventHandlers({
+      scroll: (_e, view) => {
+        if (!onScrollLineRef.current) return
+        const top = view.lineBlockAtHeight(view.scrollDOM.scrollTop)
+        onScrollLineRef.current(view.state.doc.lineAt(top.from).number)
+      },
     })
 
     const theme = EditorView.theme({
@@ -76,13 +104,15 @@ export function useMarkdownEditor({ initialValue, onChange, placeholder }: UseMa
       doc: initialValue,
       extensions: [
         history(),
-        keymap.of([...defaultKeymap, ...historyKeymap]),
+        search({ top: true }),
+        keymap.of([...searchKeymap, ...defaultKeymap, ...historyKeymap]),
         lineNumbers(),
         markdown({ base: markdownLanguage, codeLanguages: languages }),
         syntaxHighlighting(defaultHighlightStyle),
         ...(placeholder ? [cmPlaceholder(placeholder)] : []),
         theme,
         updateListener,
+        scrollListener,
         EditorView.lineWrapping,
       ],
     })
@@ -94,11 +124,8 @@ export function useMarkdownEditor({ initialValue, onChange, placeholder }: UseMa
       view.destroy()
       viewRef.current = null
     }
-    // Only runs once per mount — initialValue intentionally excluded so the
-    // editor owns its own document state after mount.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  return { containerRef, applyEdit }
+  return { containerRef, applyEdit, scrollToLine, openFind, getScrollDOM }
 }
-

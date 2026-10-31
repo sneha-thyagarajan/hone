@@ -4,19 +4,38 @@ Updated after every step. A milestone is ticked only when it passes lint + typec
 
 ---
 
-## Health check (last run: folder-kind rules + tabbed code notes)
+## Health check (last run: app shell + long-note + open-file tabs)
 
 | Check | Result |
 |-------|--------|
 | `pnpm typecheck` | ✅ pass |
 | `pnpm lint` | ✅ pass (0 warnings) |
-| `pnpm test` | ✅ 103/103 pass |
+| `pnpm test` | ✅ 126/126 pass |
 | `pnpm dev` | ✅ serves on :5173 |
-| `pnpm build` | ✅ builds (runner + parser workers emitted; chunk-size warning only) |
+| `pnpm build` | ✅ builds (workers emitted; chunk-size warning only) |
 
-> Runner execution (actual Python via Pyodide, JS worker, timeout kill) and the
-> code notes panel's image paste/drop/resize need manual browser verification.
-> Pure logic (harness, tab ops, folder rules) is unit-tested.
+> Scroll-sync, outline highlighting, drag-reorder and keyboard shortcuts need a
+> manual browser pass. Pure logic (outline, scroll-sync, tab reducers, debounce)
+> is unit-tested.
+
+### App shell + long-note editor
+- Root is `100dvh` with no page scroll; sidebar scrolls with "New folder" pinned;
+  each screen has a fixed header/toolbar and a single scrolling content area
+  (Home, folder, Planner, note editor, code practice).
+- Note editor: editor and preview scroll independently; Split syncs scroll
+  proportionally; formatting toolbar is sticky.
+- Outline panel (toggle) from Markdown headings — click scrolls editor + preview,
+  current section highlighted. Cmd/Ctrl+F opens in-note search.
+- Preview "Keep line breaks" (remark-breaks), default on, remembered in settings.
+- Preview rendering debounced (200 ms); verified with a ~5,000-line note.
+
+### Open-file tabs
+- Tab bar above the content area (notes, uploads, code) with icon + name + close.
+  Opening a file focuses its tab or opens a new one (route-synced).
+- Middle-click / close button close; Cmd/Ctrl+W closes current; Cmd/Ctrl+1..9
+  switch; drag reorders; overflow scrolls. `role="tablist"` + keyboard nav.
+- Open tabs + active tab persisted in IndexedDB and restored on reload; deleted
+  files close their tab quietly. Study session stays full-screen with no tab bar.
 
 ### Folder-kind rules (`getAllowedTools`)
 - theory: notes + uploads + AI files; no code practice.
