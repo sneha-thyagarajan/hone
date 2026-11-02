@@ -1,15 +1,18 @@
 import { useState } from 'react'
 import { NavLink, useNavigate, useParams } from 'react-router-dom'
-import { ChevronRight, FileText, Code, File } from 'lucide-react'
+import { ChevronRight, FileText, Code, File, Sparkles } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useFolders } from '@/features/folders/useFolders'
 import { useFiles } from '@/features/files/useFiles'
 import { FolderActionsMenu } from '@/features/folders/FolderActionsMenu'
 import type { Folder, HoneFile } from '@/db/types'
 
+const AI_TYPES = new Set(['quiz', 'flashcards', 'ai_notes', 'cheatsheet', 'notes_ai'])
+
 function fileIcon(type: HoneFile['type']) {
   if (type === 'code') return <Code size={12} className="flex-shrink-0" />
-  if (type === 'note' || type === 'notes_ai') return <FileText size={12} className="flex-shrink-0" />
+  if (AI_TYPES.has(type)) return <Sparkles size={12} className="flex-shrink-0" />
+  if (type === 'note') return <FileText size={12} className="flex-shrink-0" />
   return <File size={12} className="flex-shrink-0" />
 }
 

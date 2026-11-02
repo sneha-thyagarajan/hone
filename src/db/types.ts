@@ -14,6 +14,8 @@ export type FileType =
   | 'note'
   | 'upload'
   | 'notes_ai'
+  | 'ai_notes'
+  | 'cheatsheet'
   | 'flashcards'
   | 'quiz'
   | 'mock'

@@ -1,16 +1,19 @@
 import { useEffect, useMemo, useRef } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { FileText, File, Code2, Layers, X } from 'lucide-react'
+import { FileText, File, Code2, Layers, X, Sparkles } from 'lucide-react'
 import { db } from '@/db'
 import { cn } from '@/lib/utils'
 import { pruneTabs, useTabsStore } from './tabsStore'
 import type { HoneFile } from '@/db/types'
 
+const AI_TYPES = new Set(['quiz', 'flashcards', 'ai_notes', 'cheatsheet', 'notes_ai'])
+
 function fileIcon(type: HoneFile['type']) {
   if (type === 'code') return <Code2 size={13} className="flex-shrink-0" />
-  if (type === 'flashcards') return <Layers size={13} className="flex-shrink-0" />
+  if (AI_TYPES.has(type)) return <Sparkles size={13} className="flex-shrink-0" />
   if (type === 'upload') return <File size={13} className="flex-shrink-0" />
+  if (type === 'flashcards') return <Layers size={13} className="flex-shrink-0" />
   return <FileText size={13} className="flex-shrink-0" />
 }
 

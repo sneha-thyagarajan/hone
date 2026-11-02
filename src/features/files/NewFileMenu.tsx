@@ -12,9 +12,10 @@ import type { FolderKind } from '@/db/types'
 interface Props {
   folderId: number
   kind: FolderKind
+  onCreateWithAi?: () => void
 }
 
-export function NewFileMenu({ folderId, kind }: Props) {
+export function NewFileMenu({ folderId, kind, onCreateWithAi }: Props) {
   const navigate = useNavigate()
   const [open, setOpen] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -107,14 +108,22 @@ export function NewFileMenu({ folderId, kind }: Props) {
 
             <DropdownMenu.Separator className="my-1 h-px bg-line" />
 
-            {/* Enabled in a future step */}
-            <div className="flex cursor-not-allowed items-start gap-3 px-4 py-2.5 opacity-40">
-              <Sparkles size={16} className="mt-0.5 flex-shrink-0 text-muted" />
+            <DropdownMenu.Item
+              onSelect={() => onCreateWithAi?.()}
+              disabled={!onCreateWithAi}
+              className={cn(
+                'flex items-start gap-3 px-4 py-2.5 outline-none',
+                onCreateWithAi
+                  ? 'cursor-pointer hover:bg-surface-2'
+                  : 'cursor-not-allowed opacity-40',
+              )}
+            >
+              <Sparkles size={16} className="mt-0.5 flex-shrink-0 text-accent" />
               <div>
                 <p className="text-sm font-medium text-ink">AI-generated file</p>
-                <p className="text-xs text-muted">Use the AI agent — coming soon</p>
+                <p className="text-xs text-muted">Quiz, flashcards, notes or cheat sheet</p>
               </div>
-            </div>
+            </DropdownMenu.Item>
           </DropdownMenu.Content>
         </DropdownMenu.Portal>
       </DropdownMenu.Root>

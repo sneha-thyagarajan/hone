@@ -1,7 +1,7 @@
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { formatDistanceToNow } from 'date-fns'
-import { ChevronRight, UploadCloud, Inbox, Filter } from 'lucide-react'
+import { ChevronRight, UploadCloud, Inbox, Filter, Sparkles } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { daysUntil } from '@/lib/dates'
 import { useFolder } from '@/features/folders/useFolders'
@@ -9,6 +9,8 @@ import { useFiles } from '@/features/files/useFiles'
 import { useReadiness } from '@/features/folders/useReadiness'
 import { NewFileMenu } from '@/features/files/NewFileMenu'
 import { FolderActionsMenu } from '@/features/folders/FolderActionsMenu'
+import { FileActionsMenu } from '@/features/files/FileActionsMenu'
+import { CreateWithAiDialog } from '@/features/agent/CreateWithAiDialog'
 import { useUploadStore } from '@/features/files/upload/uploadStore'
 import { FILE_TYPE_META, FILTER_TABS, type FilterTab } from '@/features/files/fileMeta'
 import { getAllowedTools } from '@/features/folders/tools'
@@ -27,7 +29,7 @@ function FileBadge({ type }: { type: HoneFile['type'] }) {
   return (
     <span
       className={cn(
-        'flex h-7 w-12 flex-shrink-0 items-center justify-center rounded-md text-[10px] font-bold tracking-wide',
+        'flex h-7 w-12 flex-shrink-0 items-center justify-center rounded-md text-[9px] font-bold tracking-wide',
         meta.color,
       )}
     >
@@ -36,7 +38,13 @@ function FileBadge({ type }: { type: HoneFile['type'] }) {
   )
 }
 
-function FileRow({ file }: { file: HoneFile }) {
+function FileRow({
+  file,
+  highlighted,
+}: {
+  file: HoneFile
+  highlighted: boolean
+}) {
   const navigate = useNavigate()
   const { folderId } = useParams()
 
@@ -53,20 +61,28 @@ function FileRow({ file }: { file: HoneFile }) {
   })()
 
   return (
-    <button
-      onClick={() => navigate(`/folders/${folderId}/files/${file.id}`)}
-      className="group flex min-h-[58px] w-full items-center gap-3 border-b border-line px-4 py-3 text-left transition-colors last:border-0 hover:bg-surface-2"
+    <div
+      className={cn(
+        'group flex min-h-[58px] w-full items-center gap-3 border-b border-line px-4 py-3 text-left transition-colors last:border-0',
+        highlighted ? 'bg-accent-tint/60' : 'hover:bg-surface-2',
+      )}
     >
-      <FileBadge type={file.type} />
-      <div className="flex flex-1 flex-col">
-        <span className="truncate text-sm font-semibold text-ink">{file.name}</span>
-        {subtitle && <span className="text-xs text-muted">{subtitle}</span>}
-      </div>
-      <span className="text-xs text-muted">
-        {formatDistanceToNow(file.updatedAt, { addSuffix: true })}
-      </span>
-      <ChevronRight size={16} className="text-line transition-colors group-hover:text-muted" />
-    </button>
+      <button
+        onClick={() => navigate(`/folders/${folderId}/files/${file.id}`)}
+        className="flex flex-1 items-center gap-3 overflow-hidden"
+      >
+        <FileBadge type={file.type} />
+        <div className="flex flex-1 flex-col overflow-hidden">
+          <span className="truncate text-sm font-semibold text-ink">{file.name}</span>
+          {subtitle && <span className="text-xs text-muted">{subtitle}</span>}
+        </div>
+        <span className="flex-shrink-0 text-xs text-muted">
+          {formatDistanceToNow(file.updatedAt, { addSuffix: true })}
+        </span>
+        <ChevronRight size={16} className="flex-shrink-0 text-line transition-colors group-hover:text-muted" />
+      </button>
+      <FileActionsMenu file={file} />
+    </div>
   )
 }
 
@@ -95,6 +111,8 @@ export default function FolderWorkspacePage() {
   const readiness = useReadiness(id)
   const [filter, setFilter] = useState<FilterTab>('all')
   const [dragging, setDragging] = useState(false)
+  const [aiDialogOpen, setAiDialogOpen] = useState(false)
+  const [highlightedId, setHighlightedId] = useState<number | null>(null)
   const startUploads = useUploadStore((s) => s.startUploads)
 
   const filteredFiles =
@@ -112,9 +130,26 @@ export default function FolderWorkspacePage() {
     if (files.length) startUploads(id, files)
   }
 
+  const handleAiCreated = useCallback(
+    (file: HoneFile) => {
+      // Switch to AI-made tab and highlight the new row
+      setFilter('ai')
+      setHighlightedId(file.id ?? null)
+      // Remove highlight after 2.5s
+      setTimeout(() => setHighlightedId(null), 2500)
+    },
+    [],
+  )
+
+  function openAiDialog() {
+    setAiDialogOpen(true)
+  }
+
   if (!folder) {
     return <div className="flex flex-1 items-center justify-center text-muted">Folder not found.</div>
   }
+
+  const aiCount = allFiles.filter((f) => FILE_TYPE_META[f.type].filter === 'ai').length
 
   return (
     <div
@@ -166,7 +201,19 @@ export default function FolderWorkspacePage() {
           </div>
           <div className="flex items-center gap-2">
             <FolderActionsMenu folder={folder} variant="page" />
-            <NewFileMenu folderId={folder.id!} kind={folder.kind} />
+            {/* Create with AI button */}
+            <button
+              onClick={openAiDialog}
+              className="flex min-h-[44px] items-center gap-1.5 rounded-btn border border-accent bg-accent-tint px-3.5 text-sm font-semibold text-accent transition-colors hover:bg-accent hover:text-on-accent"
+            >
+              <Sparkles size={15} />
+              Create with AI
+            </button>
+            <NewFileMenu
+              folderId={folder.id!}
+              kind={folder.kind}
+              onCreateWithAi={openAiDialog}
+            />
           </div>
         </div>
       </div>
@@ -240,7 +287,25 @@ export default function FolderWorkspacePage() {
           {/* File list */}
           <div className="overflow-hidden rounded-card border border-line bg-surface shadow-card">
             {filteredFiles.length === 0 ? (
-              allFiles.length === 0 ? (
+              // AI-made empty state
+              filter === 'ai' ? (
+                <div className="flex flex-col items-center justify-center gap-4 py-16 text-center">
+                  <Sparkles size={28} className="text-accent" />
+                  <div>
+                    <p className="text-sm font-medium text-ink">Nothing generated yet</p>
+                    <p className="mt-1 text-xs text-muted">
+                      Use the AI agent to generate a quiz, flashcards, notes or a cheat sheet.
+                    </p>
+                  </div>
+                  <button
+                    onClick={openAiDialog}
+                    className="flex items-center gap-2 rounded-btn bg-accent px-4 py-2 text-sm font-semibold text-on-accent transition-opacity hover:opacity-90"
+                  >
+                    <Sparkles size={14} />
+                    Create with AI
+                  </button>
+                </div>
+              ) : allFiles.length === 0 ? (
                 <div className="flex flex-col items-center justify-center gap-3 py-16 text-center">
                   <Inbox size={28} className="text-muted" />
                   <div>
@@ -262,11 +327,35 @@ export default function FolderWorkspacePage() {
                 </div>
               )
             ) : (
-              filteredFiles.map((f) => <FileRow key={f.id} file={f} />)
+              filteredFiles.map((f) => (
+                <FileRow key={f.id} file={f} highlighted={highlightedId === f.id} />
+              ))
             )}
           </div>
+
+          {/* AI count hint in footer when there are AI files */}
+          {aiCount > 0 && filter !== 'ai' && (
+            <button
+              onClick={() => setFilter('ai')}
+              className="mt-3 flex items-center gap-1.5 text-xs text-muted transition-colors hover:text-accent"
+            >
+              <Sparkles size={12} />
+              {aiCount} AI-generated file{aiCount !== 1 ? 's' : ''} — view in AI-made tab
+            </button>
+          )}
         </div>
       </div>
+
+      {/* Create with AI dialog */}
+      {id !== undefined && (
+        <CreateWithAiDialog
+          open={aiDialogOpen}
+          onOpenChange={setAiDialogOpen}
+          folderId={id}
+          folderFiles={allFiles}
+          onCreated={handleAiCreated}
+        />
+      )}
     </div>
   )
 }

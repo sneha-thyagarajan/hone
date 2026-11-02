@@ -5,8 +5,10 @@ import { touchFile } from '@/features/files/fileActions'
 import NoteEditorPage from './note-editor'
 import CodePracticePage from './code-practice'
 import UploadViewer from '@/features/files/UploadViewer'
+import AiFileViewer from '@/features/files/AiFileViewer'
 
 const CONTINUABLE = new Set(['note', 'notes_ai', 'code', 'flashcards'])
+const AI_TYPES = new Set(['quiz', 'flashcards', 'ai_notes', 'cheatsheet'])
 
 /** Routes to the correct editor based on file.type. */
 export default function FileDispatcher() {
@@ -24,6 +26,7 @@ export default function FileDispatcher() {
   if (file.type === 'note' || file.type === 'notes_ai') return <NoteEditorPage />
   if (file.type === 'code') return <CodePracticePage />
   if (file.type === 'upload') return <UploadViewer />
+  if (AI_TYPES.has(file.type)) return <AiFileViewer />
 
   return (
     <div className="flex flex-1 items-center justify-center text-muted">

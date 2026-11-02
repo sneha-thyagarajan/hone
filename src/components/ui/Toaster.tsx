@@ -21,6 +21,17 @@ export function Toaster() {
             {t.kind === 'info' && <Info size={15} className="text-accent" />}
           </span>
           <span className="text-sm font-medium text-ink">{t.message}</span>
+          {t.action && (
+            <button
+              onClick={() => {
+                t.action!.onClick()
+                dismiss(t.id)
+              }}
+              className="flex-shrink-0 rounded px-2 py-0.5 text-xs font-semibold text-accent transition-colors hover:bg-accent-tint"
+            >
+              {t.action.label}
+            </button>
+          )}
           <button
             onClick={() => dismiss(t.id)}
             className={cn(
