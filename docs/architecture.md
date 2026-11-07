@@ -274,3 +274,12 @@ See the restriction in `eslint.config.js`:
 > - `src/app/pages/code-practice.tsx` line 14
 
 The rule is already active for `src/components/**` (no violations there). Once P1 and P2 are resolved, extend the pattern to cover `src/features/**/*.tsx` as well.
+
+---
+
+## 8 · AI layer
+
+The AI pipeline, provider interface, and design decisions (why no RAG in v1, grounding
+strategy, provider tiers, map-reduce for large documents) are documented separately:
+
+**[docs/ai-architecture.md](ai-architecture.md)**

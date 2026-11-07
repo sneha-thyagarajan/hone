@@ -1,9 +1,11 @@
 import { useState } from 'react'
-import { Home, CalendarDays, Plus, GraduationCap } from 'lucide-react'
+import { Home, CalendarDays, Plus, GraduationCap, Settings } from 'lucide-react'
+import { NavLink } from 'react-router-dom'
 import { NavItem } from './NavItem'
 import { FolderTree } from './FolderTree'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
 import { CreateFolderDialog } from '@/features/folders/CreateFolderDialog'
+import { cn } from '@/lib/utils'
 
 export function Sidebar() {
   const [createOpen, setCreateOpen] = useState(false)
@@ -42,15 +44,29 @@ export function Sidebar() {
           </div>
         </div>
 
-        {/* New folder */}
-        <div className="p-3">
+        {/* New folder + Settings */}
+        <div className="flex items-center gap-1 p-3">
           <button
             onClick={() => setCreateOpen(true)}
-            className="flex min-h-[44px] w-full items-center justify-center gap-2 rounded-btn border border-white/10 bg-white/5 text-sm font-medium text-sidebar-text transition-colors hover:bg-white/10 hover:text-cream"
+            className="flex min-h-[44px] flex-1 items-center justify-center gap-2 rounded-btn border border-white/10 bg-white/5 text-sm font-medium text-sidebar-text transition-colors hover:bg-white/10 hover:text-cream"
           >
             <Plus size={16} />
             New folder
           </button>
+          <NavLink
+            to="/settings"
+            title="Settings"
+            className={({ isActive }) =>
+              cn(
+                'flex min-h-[44px] w-[44px] items-center justify-center rounded-btn transition-colors',
+                isActive
+                  ? 'bg-white/10 text-pink shadow-[inset_0_0_0_1px_rgb(255_255_255/0.08)]'
+                  : 'text-sidebar-muted hover:bg-white/5 hover:text-sidebar-text',
+              )
+            }
+          >
+            <Settings size={17} />
+          </NavLink>
         </div>
       </aside>
 

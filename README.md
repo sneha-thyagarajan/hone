@@ -67,6 +67,9 @@ The AI features are **opt-in** and work with any OpenAI-compatible endpoint.
 | Groq | `https://api.groq.com/openai/v1` | Fast, generous free tier |
 | Mock (demo) | *(leave blank)* | Returns sample JSON, no key needed |
 
+For Ollama setup, model recommendations, troubleshooting, and the full AI design rationale,
+see **[docs/ai-architecture.md](docs/ai-architecture.md)**.
+
 ---
 
 ## Scripts

@@ -193,6 +193,13 @@
     background-image: linear-gradient(135deg, #3d5b59, #f6978b);
   }
 
+  /* Standard text/URL/password input */
+  .field-input {
+    @apply w-full rounded-btn border border-line bg-surface px-3 py-2.5 text-sm text-ink outline-none
+           placeholder:text-muted transition-colors
+           focus:border-accent focus:ring-2 focus:ring-accent/20;
+  }
+
   /* Card lift on hover */
   .card-hover {
     transition:
