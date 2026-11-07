@@ -215,7 +215,32 @@ function FlashcardsViewer({ content }: { content: string }) {
 
 function MarkdownViewer({ content }: { content: string }) {
   return (
-    <div className="prose prose-sm max-w-none dark:prose-invert">
+    <div
+      className={cn(
+        'prose prose-sm max-w-none',
+        // Headings
+        'prose-headings:font-semibold prose-headings:text-heading prose-headings:tracking-tight',
+        'prose-h1:text-2xl prose-h1:font-bold prose-h2:text-lg prose-h2:border-b prose-h2:border-line prose-h2:pb-1',
+        'prose-h3:text-base prose-h3:text-accent',
+        // Body
+        'prose-p:text-ink prose-p:leading-relaxed',
+        // Lists
+        'prose-ul:pl-5 prose-ol:pl-5',
+        'prose-li:text-ink prose-li:marker:text-accent',
+        // Strong / em
+        'prose-strong:text-ink prose-strong:font-semibold',
+        // Code
+        'prose-code:rounded prose-code:bg-surface-2 prose-code:px-1 prose-code:py-0.5 prose-code:text-xs prose-code:font-mono prose-code:text-ink prose-code:before:content-none prose-code:after:content-none',
+        'prose-pre:rounded-card prose-pre:border prose-pre:border-line prose-pre:bg-surface-2',
+        // Tables
+        'prose-table:text-sm prose-th:text-left prose-th:font-semibold prose-th:text-heading',
+        'prose-td:align-top',
+        // Horizontal rule
+        'prose-hr:border-line',
+        // Links
+        'prose-a:text-accent prose-a:underline-offset-2',
+      )}
+    >
       <ReactMarkdown rehypePlugins={[rehypeSanitize]}>{content}</ReactMarkdown>
     </div>
   )
@@ -276,7 +301,7 @@ export default function AiFileViewer() {
 
       {/* Content */}
       <div className="min-h-0 flex-1 overflow-y-auto px-6 py-6">
-        <div className="mx-auto max-w-2xl">
+        <div className="mx-auto max-w-3xl">
           {(file.type === 'quiz') && (
             <QuizViewer content={file.content ?? ''} />
           )}
